@@ -1,12 +1,13 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
+from matplotlib import pyplot 
 import time
-import ipdb 
 import base64
 import io 
 import numpy as np 
 import cv2
+import tensorflow as tf
 
 class ChromeDriver(object): 
 
@@ -32,12 +33,19 @@ class Game(object):
     def __init__(self):
         self.driver = ChromeDriver().driver
 
+    def showEnvironmentImage(self, envImage):
+        pyplot.imshow(envImage)
+        pyplot.show()
+
     def getEnvironmentState(self):
+        return self.getScore(), self.getEnvironmentImage()
+
+    def getEnvironmentImage(self):
         screenAsBase64 = self.driver.get_screenshot_as_base64().encode()
         screenAsBytes = base64.b64decode(screenAsBase64)
         screenAsNumpyArray = cv2.imdecode(np.frombuffer(screenAsBytes, np.uint8), 0)
-        ipdb.set_trace()
-        return None
+        screenAsNumpyArrayShortened = (screenAsNumpyArray[30:141]/128).astype(int)
+        return screenAsNumpyArrayShortened
 
     def restartGame(self):
         self.driver.execute_script("Runner.instance_.restart()")
@@ -93,8 +101,8 @@ class Agent(object):
 
     def processEnvironmentToAction(self, timeStep):
         startTime = time.time()
-        environmentState = self.game.getEnvironmentState()
-        self.takeAction(self.model.getAction(environmentState))
+        score, environment = self.game.getEnvironmentState()
+        self.takeAction(self.model.getAction(environment))
         passedTime = time.time() - startTime
         if(passedTime < timeStep):
             time.sleep(timeStep - passedTime)
