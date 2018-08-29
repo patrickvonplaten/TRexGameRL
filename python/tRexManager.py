@@ -2,33 +2,37 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from matplotlib import pyplot 
+from random import randint
 import time
 import base64
 import io 
 import numpy as np 
+import sys
 import cv2
 import tensorflow as tf
 import ipdb
 
+WINDOW_SIZE = '400,300'
+CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver' 
+CHROME_PATH = '/usr/bin/google-chrome'
+TREX_HTML_PATH = 'file:///home/patrick/TRexGameRL/javascript/index.html'
+
 class ChromeDriver(object): 
 
-    def __init__(self, chromeExecutablePath='/usr/bin/chromedriver', tRexHtmlPath='file:///home/patrick/TRexGameRL/javascript/index.html'):
-        self.chromeExecutablePath = chromeExecutablePath
-        self.tRexHtmlPath = tRexHtmlPath
-        self.chromeOptions = ['disable-infobars']
-        self.driver = self.configureDriver(self.chromeOptions)
+    def __init__(self):
+        chromeOptions = ['disable-infobars', '--window-size=%s' % WINDOW_SIZE]
+        chromeOptions.append('--headless')
+        self.driver = self.configureDriver(chromeOptions)
 
     def configureDriver(self, chromeOptions):
-        options = Options()
+        chrome_options = Options()
         for option in chromeOptions: 
-            options.add_argument(option)
+            chrome_options.add_argument(option)
+        chrome_options.binary_location = CHROME_PATH
         
-        driver=webdriver.Chrome(executable_path=self.chromeExecutablePath, chrome_options=options)        
-        driver.set_window_position(x=-10,y=0)
-        driver.set_window_size(200, 300)
-        driver.get(self.tRexHtmlPath)
+        driver=webdriver.Chrome(executable_path=CHROME_EXECUTABLEPATH, chrome_options=chrome_options)        
+        driver.get(TREX_HTML_PATH)
         return driver
-
 
 class Game(object):
     def __init__(self):
@@ -38,7 +42,7 @@ class Game(object):
         self.screenshotVerticalDim = self.screenshotVerticalDimCoord[1] - self.screenshotVerticalDimCoord[0]
         self.discretizationLevel = 128
         self.framesPerSample = 4
-        self.frameSamplingRate = 0.25
+        self.frameSamplingRate = 0.1
         self.tempEnvironmentData = np.zeros((self.framesPerSample, self.screenshotVerticalDim, self.screenshotHorizontalDim), dtype=np.int8)
         self.dataShape = (2*self.tempEnvironmentData.shape[0],) + self.tempEnvironmentData.shape[1:]
 
@@ -62,19 +66,17 @@ class Game(object):
             endTime = time.time() - startTime
             if(endTime < self.frameSamplingRate):
                 time.sleep(self.frameSamplingRate - endTime)
-            print('EnvState' + str(i))
-        print('Finish')
         self.tempEnvironmentData = environmentData[self.framesPerSample:]
         return environmentData
 
     def restartGame(self):
-        self.driver.execute_script("Runner.instance_.restart()")
+        return self.driver.execute_script("Runner.instance_.restart()")
 
     def pressUp(self):
-        self.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
+        return self.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
 
     def pressDown(self):
-        self.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
+        return self.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
 
     def isCrashed(self):
         return self.driver.execute_script("return Runner.instance_.crashed")
@@ -85,10 +87,11 @@ class Game(object):
     def getScore(self):
         scoreArray = self.driver.execute_script("return Runner.instance_.distanceMeter.digits")
         score = ''.join(scoreArray) 
+        print('Score' + str(score))
         return int(score)
 
     def end(self):
-        self.driver.close()
+        self.driver.quit()
 
 
 class Agent(object):
@@ -96,10 +99,9 @@ class Agent(object):
     def __init__(self, model, mode, epochToCollectData):
         self.game = Game() 
         self.model = model
-        self.actions = [self.jump, self.run, self.duck]
         self.mode = mode 
         self.epochToCollectData = epochToCollectData
-        self.timeStep = 0.25
+        self.actionCode = ['jump', 'run','duck']
 
     def jump(self):
         print('jump')
@@ -114,9 +116,14 @@ class Agent(object):
         pass
 
     def takeAction(self, code):
-        return self.actions[code].__call__()
+        if(self.actionCode[code] == 'jump'):
+            return self.jump()
+        elif(self.actionCode[code] == 'run'):
+            return self.run()
+        elif(self.actionCode[code] == 'duck'):
+            return self.duck()
 
-    def run(self): 
+    def execute(self): 
         if(self.mode == 'play'):
             self.play()
         if(self.mode == 'train'):
@@ -124,7 +131,6 @@ class Agent(object):
 
     def play(self):
         self.jump()
-        print("Start game")
         while(self.game.isRunning()):
             self.processEnvironmentToAction()
 
@@ -132,7 +138,7 @@ class Agent(object):
         environment = self.game.getEnvironmentState()
         actionCode = self.model.getAction(environment)
         self.takeAction(actionCode)
-        print('Action')
+        self.game.getScore()
         return actionCode, environment
 
     def train(self):
@@ -143,7 +149,9 @@ class Agent(object):
         trainingData = [[None, None, None]]
         oldEnvironment = None
         for i in range(self.epochToCollectData+1):
+            print('iter start' + str(i), flush=True)
             actionCode, environment = self.processEnvironmentToAction()
+            print('iter end' + str(i), flush=True)
             reward = self.getReward(actionCode)
             if(self.game.isCrashed()):
                 self.game.restartGame()
@@ -153,21 +161,19 @@ class Agent(object):
             sample.append(reward)
             sample.append(None)
             trainingData[i-1].append(environment)
+            ipdb.set_trace()
             trainingData.append(sample)
-            print(i)
-            if(i==2):
-                ipdb.set_trace()
         trainingData = trainingData[1:-1]
         return trainingData
             
-    def getReward(self, actionCode):
+    def getReward(self, code):
         if(self.game.isCrashed()):
             return -100
-        elif(self.actions[actionCode].__name__ == 'jump'):
+        elif(self.actionCode[code] == 'jump'): 
             return -5
-        elif(self.actions[actionCode].__name__ == 'duck'):
+        elif(self.actionCode[code] == 'duck'): 
             return -3 
-        else: 
+        elif(self.actionCode[code] == 'run'): 
             return 1
 
 class Model(object):
@@ -176,9 +182,9 @@ class Model(object):
         self.weights = None 
 
     def getAction(self, environmentState):
-        from random import randint
         return randint(0, 2)
 
 if __name__ == "__main__":
-    agent = Agent(model = Model(),mode='train', epochToCollectData=40)
-    agent.run()
+    agent = Agent(model = Model(),mode='train', epochToCollectData=10)
+    agent.execute()
+    agent.game.end()
