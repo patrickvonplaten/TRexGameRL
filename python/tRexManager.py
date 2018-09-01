@@ -11,11 +11,13 @@ import sys
 import cv2
 import tensorflow as tf
 import ipdb
+import os
 
 WINDOW_SIZE = '400,300'
 CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver' 
 CHROME_PATH = '/usr/bin/google-chrome'
-TREX_HTML_PATH = 'file:///home/patrick/TRexGameRL/javascript/index.html'
+CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+TREX_HTML_PATH = 'file://{}/../javascript/index.html'.format(CUR_PATH)
 
 class ChromeDriver(object): 
 
