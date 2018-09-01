@@ -1,0 +1,5 @@
+tensorflow_gpu==1.4.1
+numpy==1.13.3
+ipdb==0.11
+matplotlib==2.2.3
+selenium==3.14.0
