@@ -21,7 +21,7 @@ class ChromeDriver(object):
 
     def __init__(self):
         chromeOptions = ['disable-infobars', '--window-size=%s' % WINDOW_SIZE]
-        chromeOptions.append('--headless')
+#        chromeOptions.append('--headless')
         self.driver = self.configureDriver(chromeOptions)
 
     def configureDriver(self, chromeOptions):
@@ -161,7 +161,6 @@ class Agent(object):
             sample.append(reward)
             sample.append(None)
             trainingData[i-1].append(environment)
-            ipdb.set_trace()
             trainingData.append(sample)
         trainingData = trainingData[1:-1]
         return trainingData
@@ -185,6 +184,6 @@ class Model(object):
         return randint(0, 2)
 
 if __name__ == "__main__":
-    agent = Agent(model = Model(),mode='train', epochToCollectData=10)
+    agent = Agent(model = Model(),mode='train', epochToCollectData=40)
     agent.execute()
     agent.game.end()
