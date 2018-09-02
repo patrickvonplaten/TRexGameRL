@@ -2,7 +2,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from matplotlib import pyplot 
-from random import randint
+from tRexModel import TFRexModel
+from imageio import imwrite
+import os
 import time
 import base64
 import io 
@@ -16,12 +18,13 @@ WINDOW_SIZE = '400,300'
 CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver' 
 CHROME_PATH = '/usr/bin/google-chrome'
 TREX_HTML_PATH = 'file:///home/patrick/TRexGameRL/javascript/index.html'
+PATH_TO_IMAGE_FOLDER = '/home/patrick/TRexGameRL/imagesToCheck'
 
 class ChromeDriver(object): 
 
     def __init__(self):
         chromeOptions = ['disable-infobars', '--window-size=%s' % WINDOW_SIZE]
-#        chromeOptions.append('--headless')
+        chromeOptions.append('--headless')
         self.driver = self.configureDriver(chromeOptions)
 
     def configureDriver(self, chromeOptions):
@@ -53,7 +56,7 @@ class Game(object):
     def transfromBase64ToUint8(self, screenshot):
         screenAsBase64 = screenshot.encode()
         screenAsBytes = base64.b64decode(screenAsBase64)
-        return cv2.imdecode(np.frombuffer(screenAsBytes, np.uint8), 0)
+        return cv2.imdecode(np.frombuffer(screenAsBytes, np.uint8), 0).astype(np.uint8)
     
     def getEnvironmentState(self):
         environmentData = np.zeros(self.dataShape, dtype=np.int8)
@@ -102,6 +105,8 @@ class Agent(object):
         self.mode = mode 
         self.epochToCollectData = epochToCollectData
         self.actionCode = ['jump', 'run','duck']
+        self.trainingData = None
+        self.pathToImageFolder = PATH_TO_IMAGE_FOLDER
 
     def jump(self):
         print('jump')
@@ -138,7 +143,7 @@ class Agent(object):
         environment = self.game.getEnvironmentState()
         actionCode = self.model.getAction(environment)
         self.takeAction(actionCode)
-        self.game.getScore()
+#        self.game.getScore()
         return actionCode, environment
 
     def train(self):
@@ -146,9 +151,9 @@ class Agent(object):
 
     def collectTrainingData(self):
         self.jump()
-        trainingData = [[None, None, None]]
+        self.trainingData = [[None, None, None]]
         oldEnvironment = None
-        for i in range(self.epochToCollectData+1):
+        for i in range(self.epochToCollectData+2):
             print('iter start' + str(i), flush=True)
             actionCode, environment = self.processEnvironmentToAction()
             print('iter end' + str(i), flush=True)
@@ -159,12 +164,19 @@ class Agent(object):
             sample.append(environment)
             sample.append(actionCode)
             sample.append(reward)
-            sample.append(None)
-            trainingData[i-1].append(environment)
-            trainingData.append(sample)
-        trainingData = trainingData[1:-1]
-        return trainingData
-            
+            self.trainingData[i-1].append(environment)
+            self.trainingData.append(sample)
+        self.trainingData = self.trainingData[1:-1]
+        return self.trainingData
+
+    def saveEnvironmentScreenshots(self, numberOfEnvStatesToPrint=None):
+        numberOfEnvStatesToPrint = numberOfEnvStatesToPrint if numberOfEnvStatesToPrint is not None else self.epochToCollectData
+        for i in range(len(self.trainingData[:numberOfEnvStatesToPrint])):
+            for j in range(4):
+                imageToSave = self.trainingData[i][0][j+4]
+#                ipdb.set_trace()
+                imwrite(os.path.join(self.pathToImageFolder,'env_' + str(i) + '_' + str(j+4) + '.jpg'), imageToSave)
+
     def getReward(self, code):
         if(self.game.isCrashed()):
             return -100
@@ -175,15 +187,8 @@ class Agent(object):
         elif(self.actionCode[code] == 'run'): 
             return 1
 
-class Model(object):
-
-    def __init__(self):
-        self.weights = None 
-
-    def getAction(self, environmentState):
-        return randint(0, 2)
-
 if __name__ == "__main__":
-    agent = Agent(model = Model(),mode='train', epochToCollectData=40)
+    agent = Agent(model = TFRexModel(),mode='train', epochToCollectData=20)
     agent.execute()
+    agent.saveEnvironmentScreenshots()
     agent.game.end()
