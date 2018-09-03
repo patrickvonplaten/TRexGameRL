@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -40,16 +41,12 @@ class ChromeDriver(object):
         return driver
 
 class Game(object):
-    def __init__(self):
+    def __init__(self, framesPerSample=4, frameSamplingRate=0.1):
         self.driver = ChromeDriver().driver
-        self.screenshotHorizontalDim = self.transfromBase64ToUint8(self.driver.get_screenshot_as_base64()).shape[1]
-        self.screenshotVerticalDimCoord = (30,141)
-        self.screenshotVerticalDim = self.screenshotVerticalDimCoord[1] - self.screenshotVerticalDimCoord[0]
-        self.discretizationLevel = 128
-        self.framesPerSample = 4
-        self.frameSamplingRate = 0.1
-        self.tempEnvironmentData = np.zeros((self.framesPerSample, self.screenshotVerticalDim, self.screenshotHorizontalDim), dtype=np.int8)
-        self.dataShape = (2*self.tempEnvironmentData.shape[0],) + self.tempEnvironmentData.shape[1:]
+        self.screenshotShape = self.transfromBase64ToUint8(self.driver.get_screenshot_as_base64()).shape
+        self.framesPerSample = framesPerSample
+        self.frameSamplingRate = frameSamplingRate
+        self.environmentDataShape = (self.framesPerSample,) + self.screenshotShape
 
     def showEnvironmentImage(self, envImage):
         pyplot.imshow(envImage)
@@ -58,20 +55,18 @@ class Game(object):
     def transfromBase64ToUint8(self, screenshot):
         screenAsBase64 = screenshot.encode()
         screenAsBytes = base64.b64decode(screenAsBase64)
-        return cv2.imdecode(np.frombuffer(screenAsBytes, np.uint8), 0).astype(np.uint8)
+        return cv2.imdecode(np.frombuffer(screenAsBytes, np.uint8), 0)
     
     def getEnvironmentState(self):
-        environmentData = np.zeros(self.dataShape, dtype=np.int8)
-        environmentData[:self.framesPerSample] = self.tempEnvironmentData
+        environmentData = np.zeros(self.environmentDataShape, dtype=np.uint8)
         for i in range(self.framesPerSample):
             startTime = time.time()
             screenshot = self.driver.get_screenshot_as_base64()
-            screenshotAsUint8 = self.transfromBase64ToUint8(screenshot)
-            environmentData[i+self.framesPerSample] = (screenshotAsUint8[self.screenshotVerticalDimCoord[0]:self.screenshotVerticalDimCoord[1]]/self.discretizationLevel).astype(int)
+            environmentData[i] = self.transfromBase64ToUint8(screenshot)
+#            ipdb.set_trace()
             endTime = time.time() - startTime
             if(endTime < self.frameSamplingRate):
                 time.sleep(self.frameSamplingRate - endTime)
-        self.tempEnvironmentData = environmentData[self.framesPerSample:]
         return environmentData
 
     def restartGame(self):
@@ -101,8 +96,8 @@ class Game(object):
 
 class Agent(object):
 
-    def __init__(self, model, mode, epochToCollectData):
-        self.game = Game() 
+    def __init__(self, game, model, mode, epochToCollectData):
+        self.game = game
         self.model = model
         self.mode = mode 
         self.epochToCollectData = epochToCollectData
@@ -171,11 +166,14 @@ class Agent(object):
         self.trainingData = self.trainingData[1:-1]
         return self.trainingData
 
+    def end(self):
+        return self.game.end()
+
     def saveEnvironmentScreenshots(self, numberOfEnvStatesToPrint=None):
         numberOfEnvStatesToPrint = numberOfEnvStatesToPrint if numberOfEnvStatesToPrint is not None else self.epochToCollectData
         for i in range(len(self.trainingData[:numberOfEnvStatesToPrint])):
             for j in range(4):
-                imageToSave = self.trainingData[i][0][j+4]
+                imageToSave = self.trainingData[i][0][j]
 #                ipdb.set_trace()
                 imwrite(os.path.join(self.pathToImageFolder,'env_' + str(i) + '_' + str(j+4) + '.jpg'), imageToSave)
 
@@ -190,7 +188,9 @@ class Agent(object):
             return 1
 
 if __name__ == "__main__":
-    agent = Agent(model = TFRexModel(),mode='train', epochToCollectData=20)
+    model = TFRexModel()
+    game = Game()
+    agent = Agent(game = game, model = model,mode='train', epochToCollectData=20)
     agent.execute()
     agent.saveEnvironmentScreenshots()
-    agent.game.end()
+    agent.end()
