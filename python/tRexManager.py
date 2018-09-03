@@ -22,23 +22,40 @@ CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 TREX_HTML_PATH = 'file://{}/../javascript/index.html'.format(CUR_PATH)
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH,'../imagesToCheck')
 
+
+#TODO naming convention python!
+
+
 class ChromeDriver(object): 
 
     def __init__(self, display):
-        chromeOptions = ['disable-infobars', '--window-size=%s' % WINDOW_SIZE]
+        chrome_options = ['disable-infobars', '--window-size=%s' % WINDOW_SIZE]
+        # TODO display changes data shape?
         if not display:
-           chromeOptions.append('--headless')
-        self.driver = self.configureDriver(chromeOptions)
+            chrome_options.append('--headless')
+        self.driver = self.configure_driver(chrome_options)
+        self.data_shape = self.get_image_as(np.uint8).shape
+        print(self.data_shape)
 
-    def configureDriver(self, chromeOptions):
+    def configure_driver(self, chromeOptions):
         chrome_options = Options()
         for option in chromeOptions: 
             chrome_options.add_argument(option)
         chrome_options.binary_location = CHROME_PATH
         
-        driver=webdriver.Chrome(executable_path=CHROME_EXECUTABLEPATH, chrome_options=chrome_options)        
+        driver = webdriver.Chrome(executable_path=CHROME_EXECUTABLEPATH, chrome_options=chrome_options)
         driver.get(TREX_HTML_PATH)
         return driver
+
+    def _get_raw_image(self):
+        screenshot = self.driver.get_screenshot_as_base64()
+        screenAsBase64 = screenshot.encode()
+        screenAsBytes = base64.b64decode(screenAsBase64)
+        return screenAsBytes
+
+    def get_image_as(self, dtype):
+        return cv2.imdecode(np.frombuffer(self._get_raw_image(), dtype), 0)
+        #return np.frombuffer(self._get_raw_image(), dtype)
 
 
 class Action(object):
@@ -46,6 +63,7 @@ class Action(object):
         self.action = action_fn
         self.code = code
         self.reward = reward
+
     def __call__(self):
         if self.code:
             print(self.code)
@@ -54,31 +72,29 @@ class Action(object):
 class Game(object):
     def __init__(self, framesPerSample, frameSamplingRate, driver):
         self.driver = driver
-        self.screenshotShape = self.transfromBase64ToUint8(self.driver.get_screenshot_as_base64()).shape
         self.framesPerSample = framesPerSample
         self.frameSamplingRate = frameSamplingRate
-        self.environmentDataShape = (self.framesPerSample,) + self.screenshotShape
+        self.environmentDataShape = (self.framesPerSample,) + driver.data_shape
 
     def showEnvironmentImage(self, envImage):
         pyplot.imshow(envImage)
         pyplot.show()
 
-    def transfromBase64ToUint8(self, screenshot):
-        screenAsBase64 = screenshot.encode()
-        screenAsBytes = base64.b64decode(screenAsBase64)
-        return cv2.imdecode(np.frombuffer(screenAsBytes, np.uint8), 0)
-
     def getEnvironmentState(self):
+        """Deprecate
+        Frames per sample should also be preprocessing.
+        """
+
         environmentData = np.zeros(self.environmentDataShape, dtype=np.uint8)
         for i in range(self.framesPerSample):
             startTime = time.time()
-            screenshot = self.driver.get_screenshot_as_base64()
-            environmentData[i] = self.transfromBase64ToUint8(screenshot)
+            environmentData[i] = self.driver.get_image_as(np.uint8)
 #            ipdb.set_trace()
             endTime = time.time() - startTime
             if(endTime < self.frameSamplingRate):
                 time.sleep(self.frameSamplingRate - endTime)
         return environmentData
+    
 
     def isCrashed(self):
         raise NotImplementedError()
@@ -98,35 +114,36 @@ class Game(object):
 
 class TRexGame(Game):
     def __init__(self, framesPerSample=4, frameSamplingRate=0.1, display=False):
-        driver = ChromeDriver(display).driver
+        driver = ChromeDriver(display)
         super().__init__(framesPerSample, frameSamplingRate, driver)
         jump = Action(self._pressUp, -5, "jump")
         duck = Action(self._pressDown, -3, "duck")
         run = Action(lambda: None, 1, "run")
         self.actions = [jump, duck, run]
+
     def _pressUp(self):
-        return self.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
+        return self.driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
 
     def _pressDown(self):
-        return self.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
+        return self.driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
 
     def restart(self):
-        return self.driver.execute_script("Runner.instance_.restart()")
+        return self.driver.driver.execute_script("Runner.instance_.restart()")
 
     def isCrashed(self):
-        return self.driver.execute_script("return Runner.instance_.crashed")
+        return self.driver.driver.execute_script("return Runner.instance_.crashed")
 
     def isRunning(self):
-        return self.driver.execute_script("return Runner.instance_.playing")
+        return self.driver.driver.execute_script("return Runner.instance_.playing")
 
     def getScore(self):
-        scoreArray = self.driver.execute_script("return Runner.instance_.distanceMeter.digits")
+        scoreArray = self.driver.driver.execute_script("return Runner.instance_.distanceMeter.digits")
         score = ''.join(scoreArray) 
         print('Score' + str(score))
         return int(score)
 
     def end(self):
-        self.driver.quit()
+        self.driver.driver.quit()
 
     def getReward(self, actionCode):
         if(self.isCrashed()):
@@ -135,6 +152,18 @@ class TRexGame(Game):
             action = self.actions[actionCode]
             return action.reward
 
+    def getState(self, actionCode):
+        environmentData = np.zeros(self.driver.dataShape, dtype=np.uint8)
+        for i in range(self.framesPerSample):
+            startTime = time.time()
+            screenshot = self.driver.get_screenshot_as_base64()
+            environmentData[i] = self.b64decode_to(screenshot)
+#            ipdb.set_trace()
+            endTime = time.time() - startTime
+            if(endTime < self.frameSamplingRate):
+                time.sleep(self.frameSamplingRate - endTime)
+        return environmentData
+
 
 class Agent(object):
     def __init__(self, game, model, mode, epochToCollectData):
@@ -142,19 +171,13 @@ class Agent(object):
         self.model = model
         self.mode = mode 
         self.epochToCollectData = epochToCollectData
-        self.actionCode = ['jump', 'run','duck']
         self.trainingData = None
         self.pathToImageFolder = PATH_TO_IMAGE_FOLDER
         if not os.path.isdir(self.pathToImageFolder):
             os.mkdir(self.pathToImageFolder)
 
     def takeAction(self, code):
-        if(self.actionCode[code] == 'jump'):
-            return self.game.actions[0]()
-        elif(self.actionCode[code] == 'run'):
-            return self.game.actions[1]()
-        elif(self.actionCode[code] == 'duck'):
-            return self.game.actions[2]()
+        return self.game.actions[code]()
 
     def execute(self): 
         if(self.mode == 'play'):
