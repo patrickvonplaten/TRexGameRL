@@ -74,7 +74,7 @@ class Game(object):
         self.driver = driver
         self.framesPerSample = framesPerSample
         self.frameSamplingRate = frameSamplingRate
-        self.environmentDataShape = (self.framesPerSample,) + driver.data_shape
+        self.timestamp = 0
 
     def showEnvironmentImage(self, envImage):
         pyplot.imshow(envImage)
@@ -84,17 +84,7 @@ class Game(object):
         """Deprecate
         Frames per sample should also be preprocessing.
         """
-
-        environmentData = np.zeros(self.environmentDataShape, dtype=np.uint8)
-        for i in range(self.framesPerSample):
-            startTime = time.time()
-            environmentData[i] = self.driver.get_image_as(np.uint8)
-#            ipdb.set_trace()
-            endTime = time.time() - startTime
-            if(endTime < self.frameSamplingRate):
-                time.sleep(self.frameSamplingRate - endTime)
-        return environmentData
-    
+        pass
 
     def isCrashed(self):
         raise NotImplementedError()
@@ -102,14 +92,19 @@ class Game(object):
     def isRunning(self):
         raise NotImplementedError()
 
-    def getState(self, action):
+    def get_state(self, action):
         raise NotImplementedError()
 
     def restart(self):
-        raise NotImplementedError()
+        self.timestamp = 0
+        return self._restart()
 
     def end(self):
         raise NotImplementedError()
+
+    def do_action(self, action_code):
+        self.timestamp += 1
+        return self._do_action(action_code)
 
 
 class TRexGame(Game):
@@ -127,7 +122,7 @@ class TRexGame(Game):
     def _pressDown(self):
         return self.driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
 
-    def restart(self):
+    def _restart(self):
         return self.driver.driver.execute_script("Runner.instance_.restart()")
 
     def isCrashed(self):
@@ -145,25 +140,31 @@ class TRexGame(Game):
     def end(self):
         self.driver.driver.quit()
 
-    def getReward(self, actionCode):
-        if(self.isCrashed()):
-            return -100
+    def _do_action(self, action_code):
+        self.actions[action_code]()
+        # TODO control here how many actions we want
+        time.sleep(.05)
+        return self.get_state(action_code)
+
+    def get_state(self, actionCode):
+        crashed = self.isCrashed()
+        if crashed:
+            reward = -100
         else:
             action = self.actions[actionCode]
-            return action.reward
+            reward = action.reward
 
-    def getState(self, actionCode):
-        environmentData = np.zeros(self.driver.dataShape, dtype=np.uint8)
-        for i in range(self.framesPerSample):
-            startTime = time.time()
-            screenshot = self.driver.get_screenshot_as_base64()
-            environmentData[i] = self.b64decode_to(screenshot)
-#            ipdb.set_trace()
-            endTime = time.time() - startTime
-            if(endTime < self.frameSamplingRate):
-                time.sleep(self.frameSamplingRate - endTime)
-        return environmentData
+        image = self.driver.get_image_as(np.uint8)
 
+        return image, reward, crashed, self.timestamp
+
+
+class Prepocessor(object):
+    def __init__(self):
+        pass
+
+    def process(self, data):
+        return data
 
 class Agent(object):
     def __init__(self, game, model, mode, epochToCollectData):
@@ -176,9 +177,6 @@ class Agent(object):
         if not os.path.isdir(self.pathToImageFolder):
             os.mkdir(self.pathToImageFolder)
 
-    def takeAction(self, code):
-        return self.game.actions[code]()
-
     def execute(self): 
         if(self.mode == 'play'):
             self.play()
@@ -186,51 +184,39 @@ class Agent(object):
             self.train()
 
     def play(self):
-        self.takeAction(0)
-        while(self.game.isRunning()):
-            self.processEnvironmentToAction()
-
-    def processEnvironmentToAction(self):
-        environment = self.game.getEnvironmentState()
-        actionCode = self.model.getAction(environment)
-        self.takeAction(actionCode)
-#        self.game.getScore()
-        return actionCode, environment
+        raise NotImplementedError
 
     def train(self):
-        trainingData = self.collectTrainingData()
-
-    def collectTrainingData(self):
-        self.takeAction(0)
-        self.trainingData = [[None, None, None]]
-        oldEnvironment = None
-        for i in range(self.epochToCollectData+2):
-            print('iter start' + str(i), flush=True)
-            actionCode, environment = self.processEnvironmentToAction()
-            print('iter end' + str(i), flush=True)
-            reward = self.game.getReward(actionCode)
-            if(self.game.isCrashed()):
-                self.game.restart()
-            sample = []
-            sample.append(environment)
-            sample.append(actionCode)
-            sample.append(reward)
-            self.trainingData[i-1].append(environment)
-            self.trainingData.append(sample)
-        self.trainingData = self.trainingData[1:-1]
-        return self.trainingData
+        self.trainingData = []
+        for i in range(self.epochToCollectData):
+            state = self.game.do_action(0)
+            image = state[0]
+            crashed = state[2]
+            epoch_data = []
+            while not crashed:
+#                print('iter start' + str(i), flush=True)
+                actionCode = self.model.getAction(image)
+                state = self.game.do_action(actionCode)
+                crashed = state[2]
+        #        self.game.getScore()
+#                print('iter end' + str(i), flush=True)
+                epoch_data.append(state)
+            print("Game {} ended!".format(i))
+            self.game.restart()
+            self.trainingData.append(epoch_data)
 
     def end(self):
         return self.game.end()
 
-    def saveEnvironmentScreenshots(self, numberOfEnvStatesToPrint=None):
-        numberOfEnvStatesToPrint = numberOfEnvStatesToPrint if numberOfEnvStatesToPrint is not None else self.epochToCollectData
-        for i in range(len(self.trainingData[:numberOfEnvStatesToPrint])):
-            for j in range(4):
-                imageToSave = self.trainingData[i][0][j]
+    def saveEnvironmentScreenshots(self, save_every_x=1):
+        for epoch, epoch_data in enumerate(self.trainingData):
+            for state in epoch_data[::save_every_x]:
+                image = state[0]
 #                ipdb.set_trace()
-                image_name = 'env_{}_{}.jpg'.format(i, j+4)
-                imwrite(os.path.join(self.pathToImageFolder, image_name), imageToSave)
+                image_name = 'env_{}_{}.jpg'.format(epoch, state[-1])
+                imwrite(os.path.join(self.pathToImageFolder, image_name), image)
+
+        print("Saved images to {}".format(self.pathToImageFolder))
 
 
 if __name__ == "__main__":
@@ -239,7 +225,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model = TFRexModel()
     game = TRexGame(display=args.display)
-    agent = Agent(game=game, model=model,mode='train', epochToCollectData=20)
+    agent = Agent(game=game, model=model,mode='train', epochToCollectData=2)
     agent.execute()
     agent.saveEnvironmentScreenshots()
     agent.end()
