@@ -13,7 +13,7 @@ import numpy as np
 import sys
 import cv2
 import ipdb
-import argparse
+from argparse import ArgumentParser
 
 WINDOW_SIZE = '400,300'
 CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver' 
@@ -24,9 +24,10 @@ PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH,'../imagesToCheck')
 
 class ChromeDriver(object): 
 
-    def __init__(self):
+    def __init__(self, display):
         chromeOptions = ['disable-infobars', '--window-size=%s' % WINDOW_SIZE]
-#        chromeOptions.append('--headless')
+        if not display:
+           chromeOptions.append('--headless')
         self.driver = self.configureDriver(chromeOptions)
 
     def configureDriver(self, chromeOptions):
@@ -51,8 +52,8 @@ class Action(object):
         self.action()
 
 class Game(object):
-    def __init__(self, framesPerSample, frameSamplingRate):
-        self.driver = ChromeDriver().driver
+    def __init__(self, framesPerSample, frameSamplingRate, driver):
+        self.driver = driver
         self.screenshotShape = self.transfromBase64ToUint8(self.driver.get_screenshot_as_base64()).shape
         self.framesPerSample = framesPerSample
         self.frameSamplingRate = frameSamplingRate
@@ -96,13 +97,13 @@ class Game(object):
 
 
 class TRexGame(Game):
-    def __init__(self, framesPerSample=4, frameSamplingRate=0.1):
-        super().__init__(framesPerSample, frameSamplingRate)
+    def __init__(self, framesPerSample=4, frameSamplingRate=0.1, display=False):
+        driver = ChromeDriver(display).driver
+        super().__init__(framesPerSample, frameSamplingRate, driver)
         jump = Action(self._pressUp, -5, "jump")
         duck = Action(self._pressDown, -3, "duck")
         run = Action(lambda: None, 1, "run")
         self.actions = [jump, duck, run]
-
     def _pressUp(self):
         return self.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
 
@@ -136,7 +137,6 @@ class TRexGame(Game):
 
 
 class Agent(object):
-
     def __init__(self, game, model, mode, epochToCollectData):
         self.game = game
         self.model = model
@@ -211,9 +211,12 @@ class Agent(object):
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument('--display', default=False, action='store_true')
+    args = parser.parse_args()
     model = TFRexModel()
-    game = TRexGame()
-    agent = Agent(game = game, model = model,mode='train', epochToCollectData=20)
+    game = TRexGame(display=args.display)
+    agent = Agent(game=game, model=model,mode='train', epochToCollectData=20)
     agent.execute()
     agent.saveEnvironmentScreenshots()
     agent.end()
