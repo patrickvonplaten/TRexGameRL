@@ -15,22 +15,19 @@ import cv2
 import ipdb
 from argparse import ArgumentParser
 
-WINDOW_SIZE = '400,300'
-CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver' 
+HEIGHT = 150
+WIDTH = 600
+CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver'
 CHROME_PATH = '/usr/bin/google-chrome'
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 TREX_HTML_PATH = 'file://{}/../javascript/index.html'.format(CUR_PATH)
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH,'../imagesToCheck')
 
 
-#TODO naming convention python!
-
-
 class ChromeDriver(object): 
 
     def __init__(self, display):
-        chrome_options = ['disable-infobars', '--window-size=%s' % WINDOW_SIZE]
-        # TODO display changes data shape? -> let's write TODO in waffle https://waffle.io/patrickvonplaten/TRexGameRL
+        chrome_options = ['disable-infobars']
         if not display:
             chrome_options.append('--headless')
         self.driver = self.configure_driver(chrome_options)
@@ -45,6 +42,9 @@ class ChromeDriver(object):
         
         driver = webdriver.Chrome(executable_path=CHROME_EXECUTABLEPATH, chrome_options=chrome_options)
         driver.get(TREX_HTML_PATH)
+        # https://stackoverflow.com/questions/40632204/selenium-webdriver-screenshot-in-python-has-the-wrong-resolution
+        dx, dy = driver.execute_script("var w=window; return [w.outerWidth - w.innerWidth, w.outerHeight - w.innerHeight];")
+        driver.set_window_size(WIDTH + dx, HEIGHT + dy)
         return driver
 
     def _get_raw_image(self):
