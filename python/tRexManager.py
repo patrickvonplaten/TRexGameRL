@@ -68,10 +68,7 @@ class Action(object):
         self.action()
 
 class Game(object):
-    def __init__(self, framesPerSample, frameSamplingRate, driver):
-        self.driver = driver
-        self.framesPerSample = framesPerSample
-        self.frameSamplingRate = frameSamplingRate
+    def __init__(self):
         self.timestamp = 0
 
     def showEnvironmentImage(self, envImage):
@@ -100,48 +97,48 @@ class Game(object):
     def end(self):
         raise NotImplementedError()
 
-    def do_action(self, action_code):
+    def do_action(self, action_code, time_to_execute_action):
         self.timestamp += 1
-        return self._do_action(action_code)
+        return self._do_action(action_code, time_to_execute_action)
 
 class TRexGame(Game):
-    def __init__(self, framesPerSample=4, frameSamplingRate=0.1, display=False):
-        chromeDriver = ChromeDriver(display)
-        super().__init__(framesPerSample, frameSamplingRate, driver)
+    def __init__(self,display=False):
+        super().__init__()
+        self.chrome_driver = ChromeDriver(display)
         jump = Action(self._pressUp, -5, "jump")
         duck = Action(self._pressDown, -3, "duck")
         run = Action(lambda: None, 1, "run")
         self.actions = [jump, duck, run]
 
     def _pressUp(self):
-        return self.chromeDriver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
+        return self.chrome_driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
 
     def _pressDown(self):
-        return self.chromeDriver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
+        return self.chrome_driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
 
     def _restart(self):
-        return self.chromeDriver.driver.execute_script("Runner.instance_.restart()")
+        return self.chrome_driver.driver.execute_script("Runner.instance_.restart()")
 
     def isCrashed(self):
-        return self.chromeDriver.driver.execute_script("return Runner.instance_.crashed")
+        return self.chrome_driver.driver.execute_script("return Runner.instance_.crashed")
 
     def isRunning(self):
-        return self.chromeDriver.driver.execute_script("return Runner.instance_.playing")
+        return self.chrome_driver.driver.execute_script("return Runner.instance_.playing")
 
     def getScore(self):
-        scoreArray = self.chromeDriver.driver.execute_script("return Runner.instance_.distanceMeter.digits")
+        scoreArray = self.chrome_driver.driver.execute_script("return Runner.instance_.distanceMeter.digits")
         score = ''.join(scoreArray) 
         print('Score' + str(score))
         return int(score)
 
     def end(self):
-        self.chromeDriver.driver.quit()
+        self.chrome_driver.driver.quit()
 
     def _do_action(self, action_code, time_to_execute_action):
         start_time = time.time()
         self.actions[action_code]()
         time_needed_to_execute_action = time.time() - start_time
-        if(time_needed_to_execute_action > 0):
+        if(time_to_execute_action - time_needed_to_execute_action > 0):
             time.sleep(time_to_execute_action - time_needed_to_execute_action)
 
     def get_state(self, actionCode):
@@ -152,15 +149,15 @@ class TRexGame(Game):
             action = self.actions[actionCode]
             reward = action.reward
 
-        image = self.driver.get_image_as(np.uint8)
-        return image, reward, crashed, self.timestamp
+        image = self.chrome_driver.get_image_as(np.uint8)
+        return State(image, reward, crashed, self.timestamp)
 
 class State(object):
-    def __init__(self):
+    def __init__(self, image, reward, crashed, timestamp):
         self.image = image
         self.reward = reward
         self.crashed = crashed
-        self.timestamp = timestap
+        self.timestamp = timestamp
         self.state_data_as_list = [self.image, self.reward, self.crashed]
 
     def get_state_data_as_list(self):
@@ -179,6 +176,7 @@ class Agent(object):
     def __init__(self, game, model, mode, epochToCollectData):
         self.game = game
         self.model = model
+        self.time_to_execute_action = model.get_time_to_execute_action()
         self.mode = mode 
         self.epochToCollectData = epochToCollectData
         self.trainingData = None
@@ -192,21 +190,25 @@ class Agent(object):
         if(self.mode == 'train'):
             self.train()
 
+    def do_action(self, action_code):
+        return self.game.do_action(action_code, self.time_to_execute_action)
+
     def play(self):
         raise NotImplementedError
 
     def train(self):
         self.trainingData = []
         for i in range(self.epochToCollectData):
-            self.game.do_action(0) # jump
+            action_code = 0 # jump to start game
+            self.do_action(action_code) 
             state = self.game.get_state(action_code)
-            image = state.get_image()
+            environment = state.get_image()
             crashed = state.is_crashed()
             epoch_data = []
             while not crashed:
 #                print('iter start' + str(i), flush=True)
-                action_code = self.model.get_action(image)
-                self.game.do_action(action_code)
+                action_code = self.model.get_action(environment)
+                self.do_action(action_code)
                 state = self.game.get_state(action_code)
                 crashed = state.is_crashed()
         #        self.game.getScore()

@@ -7,6 +7,7 @@ from random import randint
 class  TFRexModel(object):
     def __init__(self):
         self.weights = None 
+        self.time_to_execute_action = 0.1
 
     def build_model(self):
         model = tf.keras.Sequential([
@@ -19,7 +20,10 @@ class  TFRexModel(object):
     def get_action(self, environmentState):
         return randint(0, 2)
 
-    def train(self):
+    def get_time_to_execute_action(self):
+        return self.time_to_execute_action
+
+    def train(self, training_data):
         pass
 
 class Prepocessor(object):
