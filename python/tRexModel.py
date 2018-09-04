@@ -8,7 +8,7 @@ class  TFRexModel(object):
     def __init__(self):
         self.weights = None 
 
-    def buildModel(self):
+    def build_model(self):
         model = tf.keras.Sequential([
             Conv2D(filter=32, kernel_size=(8,8), strides=(4,4), padding='valid', data_format="channels_first", activation=relu),
 #            apply maxpooling (2,2)
@@ -16,5 +16,16 @@ class  TFRexModel(object):
             Conv2D(filter=64, kernel_size=(3,3), strides=(1,1), padding='valid', data_format="channels_first", activation=relu),
         ])
         
-    def getAction(self, environmentState):
+    def get_action(self, environmentState):
         return randint(0, 2)
+
+    def train(self):
+        pass
+
+class Prepocessor(object):
+    def __init__(self):
+        pass
+
+    def process(self, data):
+        return data
+

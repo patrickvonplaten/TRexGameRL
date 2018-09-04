@@ -30,7 +30,7 @@ class ChromeDriver(object):
 
     def __init__(self, display):
         chrome_options = ['disable-infobars', '--window-size=%s' % WINDOW_SIZE]
-        # TODO display changes data shape?
+        # TODO display changes data shape? -> let's write TODO in waffle https://waffle.io/patrickvonplaten/TRexGameRL
         if not display:
             chrome_options.append('--headless')
         self.driver = self.configure_driver(chrome_options)
@@ -55,8 +55,6 @@ class ChromeDriver(object):
 
     def get_image_as(self, dtype):
         return cv2.imdecode(np.frombuffer(self._get_raw_image(), dtype), 0)
-        #return np.frombuffer(self._get_raw_image(), dtype)
-
 
 class Action(object):
     def __init__(self, action_fn, reward, code=None):
@@ -106,10 +104,9 @@ class Game(object):
         self.timestamp += 1
         return self._do_action(action_code)
 
-
 class TRexGame(Game):
     def __init__(self, framesPerSample=4, frameSamplingRate=0.1, display=False):
-        driver = ChromeDriver(display)
+        chromeDriver = ChromeDriver(display)
         super().__init__(framesPerSample, frameSamplingRate, driver)
         jump = Action(self._pressUp, -5, "jump")
         duck = Action(self._pressDown, -3, "duck")
@@ -117,34 +114,35 @@ class TRexGame(Game):
         self.actions = [jump, duck, run]
 
     def _pressUp(self):
-        return self.driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
+        return self.chromeDriver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
 
     def _pressDown(self):
-        return self.driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
+        return self.chromeDriver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
 
     def _restart(self):
-        return self.driver.driver.execute_script("Runner.instance_.restart()")
+        return self.chromeDriver.driver.execute_script("Runner.instance_.restart()")
 
     def isCrashed(self):
-        return self.driver.driver.execute_script("return Runner.instance_.crashed")
+        return self.chromeDriver.driver.execute_script("return Runner.instance_.crashed")
 
     def isRunning(self):
-        return self.driver.driver.execute_script("return Runner.instance_.playing")
+        return self.chromeDriver.driver.execute_script("return Runner.instance_.playing")
 
     def getScore(self):
-        scoreArray = self.driver.driver.execute_script("return Runner.instance_.distanceMeter.digits")
+        scoreArray = self.chromeDriver.driver.execute_script("return Runner.instance_.distanceMeter.digits")
         score = ''.join(scoreArray) 
         print('Score' + str(score))
         return int(score)
 
     def end(self):
-        self.driver.driver.quit()
+        self.chromeDriver.driver.quit()
 
-    def _do_action(self, action_code):
+    def _do_action(self, action_code, time_to_execute_action):
+        start_time = time.time()
         self.actions[action_code]()
-        # TODO control here how many actions we want
-        time.sleep(.05)
-        return self.get_state(action_code)
+        time_needed_to_execute_action = time.time() - start_time
+        if(time_needed_to_execute_action > 0):
+            time.sleep(time_to_execute_action - time_needed_to_execute_action)
 
     def get_state(self, actionCode):
         crashed = self.isCrashed()
@@ -155,16 +153,27 @@ class TRexGame(Game):
             reward = action.reward
 
         image = self.driver.get_image_as(np.uint8)
-
         return image, reward, crashed, self.timestamp
 
-
-class Prepocessor(object):
+class State(object):
     def __init__(self):
-        pass
+        self.image = image
+        self.reward = reward
+        self.crashed = crashed
+        self.timestamp = timestap
+        self.state_data_as_list = [self.image, self.reward, self.crashed]
 
-    def process(self, data):
-        return data
+    def get_state_data_as_list(self):
+        return self.state_data_as_list
+
+    def get_image(self):
+        return self.image
+
+    def is_crashed(self):
+        return self.crashed
+
+    def get_time_stamp(self):
+        return self.timestamp
 
 class Agent(object):
     def __init__(self, game, model, mode, epochToCollectData):
@@ -189,21 +198,24 @@ class Agent(object):
     def train(self):
         self.trainingData = []
         for i in range(self.epochToCollectData):
-            state = self.game.do_action(0)
-            image = state[0]
-            crashed = state[2]
+            self.game.do_action(0) # jump
+            state = self.game.get_state(action_code)
+            image = state.get_image()
+            crashed = state.is_crashed()
             epoch_data = []
             while not crashed:
 #                print('iter start' + str(i), flush=True)
-                actionCode = self.model.getAction(image)
-                state = self.game.do_action(actionCode)
-                crashed = state[2]
+                action_code = self.model.get_action(image)
+                self.game.do_action(action_code)
+                state = self.game.get_state(action_code)
+                crashed = state.is_crashed()
         #        self.game.getScore()
 #                print('iter end' + str(i), flush=True)
                 epoch_data.append(state)
             print("Game {} ended!".format(i))
             self.game.restart()
             self.trainingData.append(epoch_data)
+        self.model.train(self.trainingData)
 
     def end(self):
         return self.game.end()
@@ -211,9 +223,9 @@ class Agent(object):
     def saveEnvironmentScreenshots(self, save_every_x=1):
         for epoch, epoch_data in enumerate(self.trainingData):
             for state in epoch_data[::save_every_x]:
-                image = state[0]
+                image = state.get_image()
 #                ipdb.set_trace()
-                image_name = 'env_{}_{}.jpg'.format(epoch, state[-1])
+                image_name = 'env_{}_{}.jpg'.format(epoch, state.get_time_stamp())
                 imwrite(os.path.join(self.pathToImageFolder, image_name), image)
 
         print("Saved images to {}".format(self.pathToImageFolder))
