@@ -2,15 +2,13 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
-from matplotlib import pyplot 
+from matplotlib import pyplot
 from tRexModel import TFRexModel
 from imageio import imwrite
 import os
 import time
 import base64
-import io
 import numpy as np
-import sys
 import cv2
 import ipdb
 from argparse import ArgumentParser
@@ -21,10 +19,10 @@ CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver'
 CHROME_PATH = '/usr/bin/google-chrome'
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 TREX_HTML_PATH = 'file://{}/../javascript/index.html'.format(CUR_PATH)
-PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH,'../imagesToCheck')
+PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../imagesToCheck')
 
 
-class ChromeDriver(object): 
+class ChromeDriver(object):
 
     def __init__(self, display):
         chrome_options = ['disable-infobars']
@@ -36,10 +34,10 @@ class ChromeDriver(object):
 
     def configure_driver(self, chromeOptions):
         chrome_options = Options()
-        for option in chromeOptions: 
+        for option in chromeOptions:
             chrome_options.add_argument(option)
         chrome_options.binary_location = CHROME_PATH
-        
+
         driver = webdriver.Chrome(executable_path=CHROME_EXECUTABLEPATH, chrome_options=chrome_options)
         driver.get(TREX_HTML_PATH)
         # https://stackoverflow.com/questions/40632204/selenium-webdriver-screenshot-in-python-has-the-wrong-resolution
@@ -55,6 +53,7 @@ class ChromeDriver(object):
     def get_image_as(self, dtype):
         return cv2.imdecode(np.frombuffer(self._get_raw_image(), dtype), 0)
 
+
 class Action(object):
     def __init__(self, action_fn, reward, code=None):
         self.action = action_fn
@@ -65,6 +64,7 @@ class Action(object):
         if self.code:
             print(self.code)
         self.action()
+
 
 class Game(object):
     def __init__(self):
@@ -94,8 +94,9 @@ class Game(object):
         self.timestamp += 1
         return self._do_action(action_code, time_to_execute_action)
 
+
 class TRexGame(Game):
-    def __init__(self,display=False):
+    def __init__(self, display=False):
         super().__init__()
         self.chrome_driver = ChromeDriver(display)
         jump = Action(self._press_up, -5, "jump")
@@ -120,7 +121,7 @@ class TRexGame(Game):
 
     def get_score(self):
         scoreArray = self.chrome_driver.driver.execute_script("return Runner.instance_.distanceMeter.digits")
-        score = ''.join(scoreArray) 
+        score = ''.join(scoreArray)
         print('Score' + str(score))
         return int(score)
 
@@ -146,6 +147,7 @@ class TRexGame(Game):
         image = self.chrome_driver.get_image_as(np.uint8)
         return State(image, reward, crashed, self.timestamp)
 
+
 class State(object):
     def __init__(self, image, reward, crashed, timestamp):
         self.image = image
@@ -166,19 +168,20 @@ class State(object):
     def get_time_stamp(self):
         return self.timestamp
 
+
 class Agent(object):
     def __init__(self, game, model, mode, epoch_to_collect_data):
         self.game = game
         self.model = model
         self.time_to_execute_action = model.get_time_to_execute_action()
-        self.mode = mode 
+        self.mode = mode
         self.epoch_to_collect_data = epoch_to_collect_data
         self.training_data = None
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
 
-    def execute(self): 
+    def execute(self):
         if(self.mode == 'play'):
             self.play()
         if(self.mode == 'train'):
@@ -193,8 +196,8 @@ class Agent(object):
     def train(self):
         self.training_data = []
         for i in range(self.epoch_to_collect_data):
-            action_code = 0 # jump to start game
-            self.do_action(action_code) 
+            action_code = 0  # jump to start game
+            self.do_action(action_code)
             state = self.game.get_state(action_code)
             environment = state.get_image()
             crashed = state.is_crashed()
@@ -233,7 +236,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model = TFRexModel()
     game = TRexGame(display=args.display)
-    agent = Agent(game=game, model=model,mode='train', epoch_to_collect_data=2)
+    agent = Agent(game=game, model=model, mode='train', epoch_to_collect_data=2)
     agent.execute()
     agent.save_environment_screenshots()
     agent.end()
