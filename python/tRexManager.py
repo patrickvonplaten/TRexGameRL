@@ -74,12 +74,6 @@ class Game(object):
         pyplot.imshow(env_image)
         pyplot.show()
 
-    def get_environmentState(self):
-        """Deprecate
-        Frames per sample should also be preprocessing.
-        """
-        pass
-
     def is_crashed(self):
         raise NotImplementedError()
 
@@ -137,8 +131,9 @@ class TRexGame(Game):
         start_time = time.time()
         self.actions[action_code]()
         time_needed_to_execute_action = time.time() - start_time
-        if(time_to_execute_action - time_needed_to_execute_action > 0):
-            time.sleep(time_to_execute_action - time_needed_to_execute_action)
+        time_difference = time_to_execute_action - time_needed_to_execute_action
+        if(time_difference > 0):
+            time.sleep(time_difference)
 
     def get_state(self, action_code):
         crashed = self.is_crashed()
