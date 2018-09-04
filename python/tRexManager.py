@@ -49,9 +49,8 @@ class ChromeDriver(object):
 
     def _get_raw_image(self):
         screenshot = self.driver.get_screenshot_as_base64()
-        screenAsBase64 = screenshot.encode()
-        screenAsBytes = base64.b64decode(screenAsBase64)
-        return screenAsBytes
+        b64screenshot = screenshot.encode()
+        return base64.b64decode(b64screenshot)
 
     def get_image_as(self, dtype):
         return cv2.imdecode(np.frombuffer(self._get_raw_image(), dtype), 0)
@@ -71,20 +70,20 @@ class Game(object):
     def __init__(self):
         self.timestamp = 0
 
-    def showEnvironmentImage(self, envImage):
-        pyplot.imshow(envImage)
+    def show_environment_image(self, env_image):
+        pyplot.imshow(env_image)
         pyplot.show()
 
-    def getEnvironmentState(self):
+    def get_environmentState(self):
         """Deprecate
         Frames per sample should also be preprocessing.
         """
         pass
 
-    def isCrashed(self):
+    def is_crashed(self):
         raise NotImplementedError()
 
-    def isRunning(self):
+    def is_running(self):
         raise NotImplementedError()
 
     def get_state(self, action):
@@ -105,27 +104,27 @@ class TRexGame(Game):
     def __init__(self,display=False):
         super().__init__()
         self.chrome_driver = ChromeDriver(display)
-        jump = Action(self._pressUp, -5, "jump")
-        duck = Action(self._pressDown, -3, "duck")
+        jump = Action(self._press_up, -5, "jump")
+        duck = Action(self._press_down, -3, "duck")
         run = Action(lambda: None, 1, "run")
         self.actions = [jump, duck, run]
 
-    def _pressUp(self):
+    def _press_up(self):
         return self.chrome_driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
 
-    def _pressDown(self):
+    def _press_down(self):
         return self.chrome_driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_DOWN)
 
     def _restart(self):
         return self.chrome_driver.driver.execute_script("Runner.instance_.restart()")
 
-    def isCrashed(self):
+    def is_crashed(self):
         return self.chrome_driver.driver.execute_script("return Runner.instance_.crashed")
 
-    def isRunning(self):
+    def is_running(self):
         return self.chrome_driver.driver.execute_script("return Runner.instance_.playing")
 
-    def getScore(self):
+    def get_score(self):
         scoreArray = self.chrome_driver.driver.execute_script("return Runner.instance_.distanceMeter.digits")
         score = ''.join(scoreArray) 
         print('Score' + str(score))
@@ -141,12 +140,12 @@ class TRexGame(Game):
         if(time_to_execute_action - time_needed_to_execute_action > 0):
             time.sleep(time_to_execute_action - time_needed_to_execute_action)
 
-    def get_state(self, actionCode):
-        crashed = self.isCrashed()
+    def get_state(self, action_code):
+        crashed = self.is_crashed()
         if crashed:
             reward = -100
         else:
-            action = self.actions[actionCode]
+            action = self.actions[action_code]
             reward = action.reward
 
         image = self.chrome_driver.get_image_as(np.uint8)
@@ -173,16 +172,16 @@ class State(object):
         return self.timestamp
 
 class Agent(object):
-    def __init__(self, game, model, mode, epochToCollectData):
+    def __init__(self, game, model, mode, epoch_to_collect_data):
         self.game = game
         self.model = model
         self.time_to_execute_action = model.get_time_to_execute_action()
         self.mode = mode 
-        self.epochToCollectData = epochToCollectData
-        self.trainingData = None
-        self.pathToImageFolder = PATH_TO_IMAGE_FOLDER
-        if not os.path.isdir(self.pathToImageFolder):
-            os.mkdir(self.pathToImageFolder)
+        self.epoch_to_collect_data = epoch_to_collect_data
+        self.training_data = None
+        self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
+        if not os.path.isdir(self.path_to_image_folder):
+            os.mkdir(self.path_to_image_folder)
 
     def execute(self): 
         if(self.mode == 'play'):
@@ -197,8 +196,8 @@ class Agent(object):
         raise NotImplementedError
 
     def train(self):
-        self.trainingData = []
-        for i in range(self.epochToCollectData):
+        self.training_data = []
+        for i in range(self.epoch_to_collect_data):
             action_code = 0 # jump to start game
             self.do_action(action_code) 
             state = self.game.get_state(action_code)
@@ -211,26 +210,26 @@ class Agent(object):
                 self.do_action(action_code)
                 state = self.game.get_state(action_code)
                 crashed = state.is_crashed()
-        #        self.game.getScore()
+        #        self.game.get_score()
 #                print('iter end' + str(i), flush=True)
                 epoch_data.append(state)
             print("Game {} ended!".format(i))
             self.game.restart()
-            self.trainingData.append(epoch_data)
-        self.model.train(self.trainingData)
+            self.training_data.append(epoch_data)
+        self.model.train(self.training_data)
 
     def end(self):
         return self.game.end()
 
-    def saveEnvironmentScreenshots(self, save_every_x=1):
-        for epoch, epoch_data in enumerate(self.trainingData):
+    def save_environment_screenshots(self, save_every_x=1):
+        for epoch, epoch_data in enumerate(self.training_data):
             for state in epoch_data[::save_every_x]:
                 image = state.get_image()
 #                ipdb.set_trace()
                 image_name = 'env_{}_{}.jpg'.format(epoch, state.get_time_stamp())
-                imwrite(os.path.join(self.pathToImageFolder, image_name), image)
+                imwrite(os.path.join(self.path_to_image_folder, image_name), image)
 
-        print("Saved images to {}".format(self.pathToImageFolder))
+        print("Saved images to {}".format(self.path_to_image_folder))
 
 
 if __name__ == "__main__":
@@ -239,7 +238,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model = TFRexModel()
     game = TRexGame(display=args.display)
-    agent = Agent(game=game, model=model,mode='train', epochToCollectData=2)
+    agent = Agent(game=game, model=model,mode='train', epoch_to_collect_data=2)
     agent.execute()
-    agent.saveEnvironmentScreenshots()
+    agent.save_environment_screenshots()
     agent.end()
