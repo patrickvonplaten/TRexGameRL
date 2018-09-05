@@ -80,7 +80,7 @@ class Game(object):
     def is_running(self):
         raise NotImplementedError()
 
-    def get_state(self, action):
+    def _get_state(self, action):
         raise NotImplementedError()
 
     def restart(self):
@@ -90,9 +90,9 @@ class Game(object):
     def end(self):
         raise NotImplementedError()
 
-    def do_action(self, action_code, time_to_execute_action):
+    def process_action_to_state(self, action_code, time_to_execute_action):
         self.timestamp += 1
-        return self._do_action(action_code, time_to_execute_action)
+        return self._process_action_to_state(action_code, time_to_execute_action)
 
 
 class TRexGame(Game):
@@ -128,15 +128,16 @@ class TRexGame(Game):
     def end(self):
         self.chrome_driver.driver.quit()
 
-    def _do_action(self, action_code, time_to_execute_action):
+    def _process_action_to_state(self, action_code, time_to_execute_action):
         start_time = time.time()
         self.actions[action_code]()
         time_needed_to_execute_action = time.time() - start_time
         time_difference = time_to_execute_action - time_needed_to_execute_action
         if(time_difference > 0):
             time.sleep(time_difference)
+        return self._get_state(action_code)
 
-    def get_state(self, action_code):
+    def _get_state(self, action_code):
         crashed = self.is_crashed()
         if crashed:
             reward = -100
@@ -187,8 +188,8 @@ class Agent(object):
         if(self.mode == 'train'):
             self.train()
 
-    def do_action(self, action_code):
-        return self.game.do_action(action_code, self.time_to_execute_action)
+    def process_action_to_state(self, action_code):
+        return self.game.process_action_to_state(action_code, self.time_to_execute_action)
 
     def play(self):
         raise NotImplementedError
@@ -197,16 +198,14 @@ class Agent(object):
         self.training_data = []
         for i in range(self.epoch_to_collect_data):
             action_code = 0  # jump to start game
-            self.do_action(action_code)
-            state = self.game.get_state(action_code)
+            state = self.process_action_to_state(action_code)
             environment = state.get_image()
             crashed = state.is_crashed()
             epoch_data = []
             while not crashed:
 #                print('iter start' + str(i), flush=True)
                 action_code = self.model.get_action(environment)
-                self.do_action(action_code)
-                state = self.game.get_state(action_code)
+                state = self.process_action_to_state(action_code)
                 crashed = state.is_crashed()
         #        self.game.get_score()
 #                print('iter end' + str(i), flush=True)
