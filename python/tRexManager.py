@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 from matplotlib import pyplot
 from tRexModel import TFRexModel
 from imageio import imwrite
+from collections import deque
 import os
 import time
 import base64
@@ -155,10 +156,6 @@ class State(object):
         self.reward = reward
         self.crashed = crashed
         self.timestamp = timestamp
-        self.state_data_as_list = [self.image, self.reward, self.crashed]
-
-    def get_state_data_as_list(self):
-        return self.state_data_as_list
 
     def get_image(self):
         return self.image
@@ -168,6 +165,9 @@ class State(object):
 
     def get_time_stamp(self):
         return self.timestamp
+
+    def get_reward(self):
+        return self.reward
 
 
 class Agent(object):
@@ -179,6 +179,8 @@ class Agent(object):
         self.epoch_to_collect_data = epoch_to_collect_data
         self.training_data = None
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
+        self.preprocessor = Prepocessor(vertical_crop_intervall=(50,150), horizontal_crop_intervall=(0,400), buffer_size=4)
+
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
 
@@ -198,22 +200,32 @@ class Agent(object):
         self.training_data = []
         for i in range(self.epoch_to_collect_data):
             action_code = 0  # jump to start game
-            state = self.process_action_to_state(action_code)
-            environment = state.get_image()
-            crashed = state.is_crashed()
-            epoch_data = []
+            crashed = False
+            image = self.process_action_to_state(action_code).get_image()
+            environment_prev = self.preprocessor.process(image)
+
             while not crashed:
-#                print('iter start' + str(i), flush=True)
-                action_code = self.model.get_action(environment)
-                state = self.process_action_to_state(action_code)
+                action = self.model.get_action(environment_prev)
+                state = self.process_action_to_state(action)
+
+                reward = state.get_reward()
                 crashed = state.is_crashed()
-        #        self.game.get_score()
-#                print('iter end' + str(i), flush=True)
-                epoch_data.append(state)
+                image = state.get_image()
+                environment_next = self.preprocessor.process(image)
+
+                sample = Sample(environment_prev, action, reward, environment_next, crashed)
+                self.remember(sample)
+
+                environment_prev = environment_next
             print("Game {} ended!".format(i))
+            self.replay()
             self.game.restart()
-            self.training_data.append(epoch_data)
-        self.model.train(self.training_data)
+
+    def replay(self):
+        pass
+
+    def remember(self, sample):
+        pass
 
     def end(self):
         return self.game.end()
@@ -222,11 +234,54 @@ class Agent(object):
         for epoch, epoch_data in enumerate(self.training_data):
             for state in epoch_data[::save_every_x]:
                 image = state.get_image()
-#                ipdb.set_trace()
                 image_name = 'env_{}_{}.jpg'.format(epoch, state.get_time_stamp())
                 imwrite(os.path.join(self.path_to_image_folder, image_name), image)
 
         print("Saved images to {}".format(self.path_to_image_folder))
+
+
+class Prepocessor(object):
+    def __init__(self, vertical_crop_intervall, horizontal_crop_intervall, buffer_size):
+        self.vertical_crop_start = vertical_crop_intervall[0]
+        self.vertical_crop_end = vertical_crop_intervall[1]
+        self.vertical_crop_length = self.vertical_crop_start - self.vertical_crop_end
+        self.horizontal_crop_start = horizontal_crop_intervall[0]
+        self.horizontal_crop_end = horizontal_crop_intervall[1]
+        self.horizontal_crop_length = self.horizontal_crop_start - self.horizontal_crop_end
+        self.buffer_size = buffer_size
+        self.image_processed_buffer = deque([None, None, None, None], maxlen=self.buffer_size)
+
+    def process(self, image):
+        image_processed = self.crop_image(image)
+        self.image_processed_buffer.pop()
+        self.image_processed_buffer.appendleft(image_processed)
+        environment = self.image_processed_buffer.copy()
+        return environment
+
+    def crop_image(self, image):
+        return image[self.vertical_crop_start:self.vertical_crop_end, self.horizontal_crop_start:self.horizontal_crop_end]
+
+
+class Sample(object):
+
+    def __init__(self, environment_prev, action, reward, environment_next, crashed):
+        self.environment_prev = environment_prev
+        self.action = action
+        self.reward = reward
+        self.environment_next = environment_next
+        self.crashed = crashed
+
+    def get_environment_prev(self):
+        return self.environment_prev
+
+    def get_environment_next(self):
+        return self.environment_next
+
+    def get_reward(self):
+        return self.reward
+
+    def get_action(self):
+        return self.action
 
 
 if __name__ == "__main__":

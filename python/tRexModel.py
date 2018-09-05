@@ -25,11 +25,3 @@ class  TFRexModel(object):
 
     def train(self, training_data):
         pass
-
-class Prepocessor(object):
-    def __init__(self):
-        pass
-
-    def process(self, data):
-        return data
-
