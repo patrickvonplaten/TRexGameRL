@@ -203,7 +203,8 @@ class Agent(object):
             action_code = 0  # jump to start game
             crashed = False
             image = self.process_action_to_state(action_code).get_image()
-            environment_prev = self.preprocessor.process(image)
+
+            environment_prev = self.preprocessor.init(image)
 
             while not crashed:
                 action = self.model.get_action(environment_prev)
@@ -284,6 +285,13 @@ class Prepocessor(object):
         self.horizontal_crop_length = self.horizontal_crop_start - self.horizontal_crop_end
         self.buffer_size = buffer_size
         self.image_processed_buffer = deque([None, None, None, None], maxlen=self.buffer_size)
+    
+    def init(self, image):
+        """First image is copied."""
+        # TODO can this be put into constructor.
+        image_processed = self.crop_image(image)
+        self.image_processed_buffer = deque([image_processed] * self.buffer_size,
+                                            maxlen=self.buffer_size)
 
     def process(self, image):
         image_processed = self.crop_image(image)
