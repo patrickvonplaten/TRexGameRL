@@ -268,11 +268,9 @@ class Memory(object):
 
     def sample(self, n):
         """Sample n images from memory."""
-        if self.cur_size < n:
-            return
-        idxs = np.random.choice(self.cur_size, n, replace=False)
+        num_samples = min(n, self.cur_size)
+        idxs = np.random.choice(self.cur_size, num_samples, replace=False)
         return self.storage[idxs, :]
-
 
 
 class Prepocessor(object):
