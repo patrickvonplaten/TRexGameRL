@@ -176,6 +176,7 @@ class Agent(object):
         self.model = model
         self.time_to_execute_action = model.get_time_to_execute_action()
         self.mode = mode
+        self.memory = Memory(10000)
         self.epoch_to_collect_data = epoch_to_collect_data
         self.training_data = None
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
@@ -214,17 +215,15 @@ class Agent(object):
                 environment_next = self.preprocessor.process(image)
 
                 sample = Sample(environment_prev, action, reward, environment_next, crashed)
-                self.remember(sample)
+                self.memory.add(sample)
 
                 environment_prev = environment_next
             print("Game {} ended!".format(i))
+#            ipdb.set_trace()
             self.replay()
             self.game.restart()
 
     def replay(self):
-        pass
-
-    def remember(self, sample):
         pass
 
     def end(self):
@@ -238,6 +237,41 @@ class Agent(object):
                 imwrite(os.path.join(self.path_to_image_folder, image_name), image)
 
         print("Saved images to {}".format(self.path_to_image_folder))
+
+
+class Memory(object):
+    """
+    Stores states for replay.
+    """
+    def __init__(self, size):
+        """
+        Args:
+            size: storage size
+            state_size: Number of elements one state exists of.
+        """
+        # This should be general.
+        SAMPLE_SIZE = 5
+        self.storage = np.ndarray((size, SAMPLE_SIZE), dtype=object)
+        self.size = size
+        self.pos = 0
+        self.cur_size = 0
+
+    def add(self, state):
+        """Adds elements to the storage.
+
+        Args (State): The state to store.
+        """
+        self.storage[self.pos] = state.to_list()
+        self.pos = (self.pos + 1) % self.size
+        self.cur_size = min(self.cur_size + 1, self.size)
+
+    def sample(self, n):
+        """Sample n images from memory."""
+        if self.cur_size < n:
+            return
+        idxs = np.random.choice(self.cur_size, n, replace=False)
+        return self.storage[idxs, :]
+
 
 
 class Prepocessor(object):
@@ -255,6 +289,8 @@ class Prepocessor(object):
         image_processed = self.crop_image(image)
         self.image_processed_buffer.pop()
         self.image_processed_buffer.appendleft(image_processed)
+
+        # copy otherwise reference will be returned and data inside always overwritten.
         environment = self.image_processed_buffer.copy()
         return environment
 
@@ -282,6 +318,9 @@ class Sample(object):
 
     def get_action(self):
         return self.action
+
+    def to_list(self):
+        return [self.environment_prev, self.action, self.reward, self.environment_next, self.crashed]
 
 
 if __name__ == "__main__":
