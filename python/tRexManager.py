@@ -180,7 +180,7 @@ class Agent(object):
         self.epoch_to_collect_data = epoch_to_collect_data
         self.training_data = None
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
-        self.preprocessor = Prepocessor(vertical_crop_intervall=(50,150), horizontal_crop_intervall=(0,400), buffer_size=4)
+        self.preprocessor = Prepocessor(vertical_crop_intervall=(50, 150), horizontal_crop_intervall=(0, 400), buffer_size=4)
 
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
@@ -257,12 +257,15 @@ class Memory(object):
         self.pos = 0
         self.cur_size = 0
 
-    def add(self, state):
-        """Adds elements to the storage.
+    def add(self, training_sample):
+        """Adds training sample to the storage.
 
         Args (State): The state to store.
         """
-        self.storage[self.pos] = state.to_list()
+        self.storage[self.pos] = training_sample.to_list()
+        # TODO: Why should we do a to_list() function? If we put everything into a
+        # list, the class Sample is useless. I think it's much easier to iterate over
+        # the sample object in the model and get everything that is needed.
         self.pos = (self.pos + 1) % self.size
         self.cur_size = min(self.cur_size + 1, self.size)
 
@@ -283,7 +286,7 @@ class Prepocessor(object):
         self.horizontal_crop_length = self.horizontal_crop_start - self.horizontal_crop_end
         self.buffer_size = buffer_size
         self.image_processed_buffer = deque([None, None, None, None], maxlen=self.buffer_size)
-    
+
     def init(self, image):
         """First image is copied."""
         # TODO can this be put into constructor.
@@ -325,6 +328,7 @@ class Sample(object):
     def get_action(self):
         return self.action
 
+    # TODO; Would delete the function -> renders all get functions unnecessary
     def to_list(self):
         return [self.environment_prev, self.action, self.reward, self.environment_next, self.crashed]
 
