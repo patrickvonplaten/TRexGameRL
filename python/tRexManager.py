@@ -215,8 +215,7 @@ class Agent(object):
                 image = state.get_image()
                 environment_next = self.preprocessor.process(image)
 
-                sample = Sample(environment_prev, action, reward, environment_next, crashed)
-                self.memory.add(sample)
+                self.memory.add((environment_prev, action, reward, environment_next, crashed))
 
                 environment_prev = environment_next
             print("Game {} ended!".format(i))
@@ -244,15 +243,15 @@ class Memory(object):
     """
     Stores states for replay.
     """
-    def __init__(self, size):
+    def __init__(self, size, sample_size=5):
         """
         Args:
             size: storage size
             state_size: Number of elements one state exists of.
         """
         # This should be general.
-        SAMPLE_SIZE = 5
-        self.storage = np.ndarray((size, SAMPLE_SIZE), dtype=object)
+        self.sample_size = sample_size
+        self.storage = np.ndarray((size, sample_size), dtype=object)
         self.size = size
         self.pos = 0
         self.cur_size = 0
@@ -262,7 +261,7 @@ class Memory(object):
 
         Args (State): The state to store.
         """
-        self.storage[self.pos] = training_sample.to_list()
+        self.storage[self.pos] = training_sample
         # TODO: Why should we do a to_list() function? If we put everything into a
         # list, the class Sample is useless. I think it's much easier to iterate over
         # the sample object in the model and get everything that is needed.
@@ -273,7 +272,7 @@ class Memory(object):
         """Sample n images from memory."""
         num_samples = min(n, self.cur_size)
         idxs = np.random.choice(self.cur_size, num_samples, replace=False)
-        return self.storage[idxs, :]
+        return (self.storage[idxs, i] for i in range(self.sample_size))
 
 
 class Prepocessor(object):
@@ -305,32 +304,6 @@ class Prepocessor(object):
 
     def crop_image(self, image):
         return image[self.vertical_crop_start:self.vertical_crop_end, self.horizontal_crop_start:self.horizontal_crop_end]
-
-
-class Sample(object):
-
-    def __init__(self, environment_prev, action, reward, environment_next, crashed):
-        self.environment_prev = environment_prev
-        self.action = action
-        self.reward = reward
-        self.environment_next = environment_next
-        self.crashed = crashed
-
-    def get_environment_prev(self):
-        return self.environment_prev
-
-    def get_environment_next(self):
-        return self.environment_next
-
-    def get_reward(self):
-        return self.reward
-
-    def get_action(self):
-        return self.action
-
-    # TODO; Would delete the function -> renders all get functions unnecessary
-    def to_list(self):
-        return [self.environment_prev, self.action, self.reward, self.environment_next, self.crashed]
 
 
 if __name__ == "__main__":
