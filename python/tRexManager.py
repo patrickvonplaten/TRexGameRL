@@ -223,7 +223,13 @@ class Agent(object):
             self.replay()
             self.game.restart()
 
-    def replay(self):
+    def replay(self, epoch):
+        BATCH_SIZE = 50
+        if self.memory.size < BATCH_SIZE:
+            return
+
+        batch = self.memory.sample(BATCH_SIZE)
+        self.model.train(batch)
         pass
 
     def end(self):
