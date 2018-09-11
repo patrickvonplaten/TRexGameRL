@@ -180,8 +180,11 @@ class Agent(object):
         self.epoch_to_collect_data = epoch_to_collect_data
         self.training_data = None
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
-        self.preprocessor = Prepocessor(vertical_crop_intervall=(50, 150), horizontal_crop_intervall=(0, 400), buffer_size=4)
-
+        self.preprocessor = Prepocessor(vertical_crop_intervall=(50, 150), horizontal_crop_intervall=(0, 400), buffer_size=4, resize=80)
+        self.num_actions = len(self.game.actions)
+        self.epsilon = 0.3
+        # Number of elements used for training. The model batch size will later determine how many updates this will lead to.
+        self.num_samples = 32
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
 
@@ -207,7 +210,10 @@ class Agent(object):
             environment_prev = self.preprocessor.init(image)
 
             while not crashed:
-                action = self.model.get_action(environment_prev)
+                if np.random.random() < self.epsilon:
+                    action = np.random.randint(0, self.num_actions)
+                else:
+                    action = self.model.get_action(environment_prev[None, :, : :])[0]
                 state = self.process_action_to_state(action)
 
                 reward = state.get_reward()
@@ -218,19 +224,18 @@ class Agent(object):
                 self.memory.add((environment_prev, action, reward, environment_next, crashed))
 
                 environment_prev = environment_next
-            print("Game {} ended!".format(i))
+            print("Game {} ended! Score: {}".format(i, self.game.get_score()))
 #            ipdb.set_trace()
-            self.replay()
+            self.replay(i)
             self.game.restart()
 
     def replay(self, epoch):
-        BATCH_SIZE = 50
-        if self.memory.size < BATCH_SIZE:
+        if self.memory.cur_size < self.num_samples:
             return
 
-        batch = self.memory.sample(BATCH_SIZE)
-        self.model.train(batch)
-        pass
+        environment_prevs, actions, rewards, environment_nexts, crasheds = self.memory.sample(self.num_samples)
+#        ipdb.set_trace()
+        self.model.train(environment_prevs, actions, rewards, environment_nexts, crasheds)
 
     def end(self):
         return self.game.end()
@@ -278,11 +283,13 @@ class Memory(object):
         """Sample n images from memory."""
         num_samples = min(n, self.cur_size)
         idxs = np.random.choice(self.cur_size, num_samples, replace=False)
-        return (self.storage[idxs, i] for i in range(self.sample_size))
+        sample = self.storage[idxs]
+        # stack returns an uint8 array TODO not sure why this works
+        return (np.stack(sample[:, i], axis=0) for i in range(self.sample_size))
 
 
 class Prepocessor(object):
-    def __init__(self, vertical_crop_intervall, horizontal_crop_intervall, buffer_size):
+    def __init__(self, vertical_crop_intervall, horizontal_crop_intervall, buffer_size, resize):
         self.vertical_crop_start = vertical_crop_intervall[0]
         self.vertical_crop_end = vertical_crop_intervall[1]
         self.vertical_crop_length = self.vertical_crop_start - self.vertical_crop_end
@@ -290,23 +297,29 @@ class Prepocessor(object):
         self.horizontal_crop_end = horizontal_crop_intervall[1]
         self.horizontal_crop_length = self.horizontal_crop_start - self.horizontal_crop_end
         self.buffer_size = buffer_size
-        self.image_processed_buffer = deque([None, None, None, None], maxlen=self.buffer_size)
+        self.resize = resize
 
     def init(self, image):
         """First image is copied."""
         # TODO can this be put into constructor.
-        image_processed = self.crop_image(image)
-        self.image_processed_buffer = deque([image_processed] * self.buffer_size,
-                                            maxlen=self.buffer_size)
+        image_processed = self._process(image)
+        self.image_processed_buffer = np.array([image_processed] * self.buffer_size)
+        return self.image_processed_buffer
 
-    def process(self, image):
+    def _process(self, image):
         image_processed = self.crop_image(image)
-        self.image_processed_buffer.pop()
-        self.image_processed_buffer.appendleft(image_processed)
+        image_processed = cv2.resize(image_processed, (self.resize, self.resize))
+        image_processed = image_processed / 128 - 1.0
+        return image_processed
+    
+    def process(self, image):
+        image_processed = self._process(image)
+        self.image_processed_buffer = np.concatenate([self.image_processed_buffer[1:], image_processed[None, :, :]])
 
         # copy otherwise reference will be returned and data inside always overwritten.
         environment = self.image_processed_buffer.copy()
         return environment
+
 
     def crop_image(self, image):
         return image[self.vertical_crop_start:self.vertical_crop_end, self.horizontal_crop_start:self.horizontal_crop_end]
