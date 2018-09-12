@@ -207,7 +207,7 @@ class Agent(object):
             crashed = False
             image = self.process_action_to_state(action_code).get_image()
 
-            environment_prev = self.preprocessor.init(image)
+            environment_prev = self.preprocessor.process(image)
 
             while not crashed:
                 if np.random.random() < self.epsilon:
@@ -298,13 +298,7 @@ class Prepocessor(object):
         self.horizontal_crop_length = self.horizontal_crop_start - self.horizontal_crop_end
         self.buffer_size = buffer_size
         self.resize = resize
-
-    def init(self, image):
-        """First image is copied."""
-        # TODO can this be put into constructor.
-        image_processed = self._process(image)
-        self.image_processed_buffer = np.array([image_processed] * self.buffer_size)
-        return self.image_processed_buffer
+        self.image_processed_buffer = deque([None, None, None, None], maxlen=self.buffer_size)
 
     def _process(self, image):
         image_processed = self.crop_image(image)
@@ -314,12 +308,12 @@ class Prepocessor(object):
     
     def process(self, image):
         image_processed = self._process(image)
-        self.image_processed_buffer = np.concatenate([self.image_processed_buffer[1:], image_processed[None, :, :]])
+        self.image_processed_buffer.pop()
+        self.image_processed_buffer.appendleft(image_processed)
 
         # copy otherwise reference will be returned and data inside always overwritten.
         environment = self.image_processed_buffer.copy()
         return environment
-
 
     def crop_image(self, image):
         return image[self.vertical_crop_start:self.vertical_crop_end, self.horizontal_crop_start:self.horizontal_crop_end]
