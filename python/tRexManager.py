@@ -210,10 +210,11 @@ class Agent(object):
             environment_prev = self.preprocessor.process(image)
 
             while not crashed:
-                if np.random.random() < self.epsilon:
-                    action = np.random.randint(0, self.num_actions)
-                else:
-                    action = self.model.get_action(environment_prev[None, :, : :])[0]
+#                if np.random.random() < self.epsilon:
+#                    action = np.random.randint(0, self.num_actions)
+#                else:
+                action = self.model.get_action(environment_prev)
+                ipdb.set_trace()
                 state = self.process_action_to_state(action)
 
                 reward = state.get_reward()
@@ -225,7 +226,6 @@ class Agent(object):
 
                 environment_prev = environment_next
             print("Game {} ended! Score: {}".format(i, self.game.get_score()))
-#            ipdb.set_trace()
             self.replay(i)
             self.game.restart()
 
@@ -234,7 +234,6 @@ class Agent(object):
             return
 
         environment_prevs, actions, rewards, environment_nexts, crasheds = self.memory.sample(self.num_samples)
-#        ipdb.set_trace()
         self.model.train(environment_prevs, actions, rewards, environment_nexts, crasheds)
 
     def end(self):
@@ -273,9 +272,6 @@ class Memory(object):
         Args (State): The state to store.
         """
         self.storage[self.pos] = training_sample
-        # TODO: Why should we do a to_list() function? If we put everything into a
-        # list, the class Sample is useless. I think it's much easier to iterate over
-        # the sample object in the model and get everything that is needed.
         self.pos = (self.pos + 1) % self.size
         self.cur_size = min(self.cur_size + 1, self.size)
 
@@ -298,7 +294,9 @@ class Prepocessor(object):
         self.horizontal_crop_length = self.horizontal_crop_start - self.horizontal_crop_end
         self.buffer_size = buffer_size
         self.resize = resize
-        self.image_processed_buffer = deque([None, None, None, None], maxlen=self.buffer_size)
+        # use [np.zeros() for i in range(..)] to have independent arrays
+        self.image_processed_buffer = deque([np.zeros((self.resize, self.resize), dtype=np.uint8) for i in range(self.buffer_size)], maxlen=self.buffer_size)
+        self.environment_processed_shape = (self.resize, self.resize, self.buffer_size)
 
     def _process(self, image):
         image_processed = self.crop_image(image)
@@ -311,9 +309,9 @@ class Prepocessor(object):
         self.image_processed_buffer.pop()
         self.image_processed_buffer.appendleft(image_processed)
 
-        # copy otherwise reference will be returned and data inside always overwritten.
-        environment = self.image_processed_buffer.copy()
-        return environment
+        # np.asarray performs copy  
+        environment = np.array(self.image_processed_buffer)
+        return environment.reshape(self.environment_processed_shape)
 
     def crop_image(self, image):
         return image[self.vertical_crop_start:self.vertical_crop_end, self.horizontal_crop_start:self.horizontal_crop_end]
