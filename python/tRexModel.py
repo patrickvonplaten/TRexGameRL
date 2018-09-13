@@ -22,23 +22,18 @@ class TFRexModel(object):
             'momentum': 0.9,
             'metrics': ['accuracy'],
             'loss': 'mean_squared_error'
-            }
+        }
         self.model = self.build_model()
         self.compile_model()
 
     def build_model(self):
         model = Sequential()
-        model.add(Conv2D(input_shape=self.input_shape,
-                         filters=32, kernel_size=(8,8), strides=(4,4),
-                         padding='valid', activation=relu))
-        model.add(MaxPool2D((2, 2)))
-        model.add(Conv2D(filters=64, kernel_size=(4,4), strides=(2,2),
-                         padding='valid', activation=relu))
-        model.add(Conv2D(filters=64, kernel_size=(3,3), strides=(1,1),
-                         padding='valid', activation=relu))
+        model.add(Conv2D(input_shape=self.input_shape, filters=32, kernel_size=(8,8), strides=(4,4), padding='valid', activation=relu, kernel_initializer='random_uniform'))
+        model.add(Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), padding='valid', activation=relu, kernel_initializer='random_uniform'))
+        model.add(Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), padding='valid', activation=relu, kernel_initializer='random_uniform'))
         model.add(Flatten())
-        model.add(Dense(512, activation=relu))
-        model.add(Dense(self.num_actions))
+        model.add(Dense(512, activation=relu, kernel_initializer='random_uniform'))
+        model.add(Dense(self.num_actions, kernel_initializer='random_uniform'))
         return model
     
     def get_action(self, environment):
@@ -49,11 +44,11 @@ class TFRexModel(object):
     def get_time_to_execute_action(self):
         return self.time_to_execute_action
 
-    def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crashed):
-        q_values = self.model.predict(environment_prevs)
-        max_q_value_next = np.amax(self.model.predict(environment_nexts), axis=1)
-        max_q_value_next[crashed] = 0
-        q_values[np.arange(q_values.shape[0]),actions] = rewards + self.discount_factor * max_q_value_next
+    def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
+        q_values = self.model.predict_on_batch(environment_prevs)
+        max_q_value_next = np.amax(self.model.predict_on_batch(environment_nexts), axis=1)
+        max_q_value_next[crasheds] = 0
+        q_values[np.arange(q_values.shape[0]), actions] = rewards + self.discount_factor * max_q_value_next
         return q_values
 
     def compile_model(self):
@@ -64,14 +59,13 @@ class TFRexModel(object):
     def train(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
         """
         Train model on given data.
-
         Data might not be able to fit into one batch.
         """
         assert environment_nexts.shape[0] == actions.shape[0] == rewards.shape[0] == environment_nexts.shape[0] == self.batch_size, 'all types of data needed for training should have same length'
 
         x = environment_prevs
         y = self._get_targets(environment_prevs, actions, rewards, environment_nexts, crasheds)
-        self.model.fit(x, y, batch_size=self.batch_size, epochs=1)
+        self.model.train_on_batch(x, y)
 
     def save_trained_weights(self):
         pass

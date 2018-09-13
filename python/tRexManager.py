@@ -214,7 +214,6 @@ class Agent(object):
 #                    action = np.random.randint(0, self.num_actions)
 #                else:
                 action = self.model.get_action(environment_prev)
-                ipdb.set_trace()
                 state = self.process_action_to_state(action)
 
                 reward = state.get_reward()
@@ -226,6 +225,7 @@ class Agent(object):
 
                 environment_prev = environment_next
             print("Game {} ended! Score: {}".format(i, self.game.get_score()))
+            ipdb.set_trace()
             self.replay(i)
             self.game.restart()
 
