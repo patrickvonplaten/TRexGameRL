@@ -3,7 +3,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from matplotlib import pyplot
-from tRexModel import TFRexModel
 from imageio import imwrite
 from collections import deque
 import os
@@ -12,7 +11,6 @@ import base64
 import numpy as np
 import cv2
 import ipdb
-from argparse import ArgumentParser
 
 HEIGHT = 150
 WIDTH = 600
@@ -103,7 +101,7 @@ class TRexGame(Game):
         jump = Action(self._press_up, -5, "jump")
         duck = Action(self._press_down, -3, "duck")
         run = Action(lambda: None, 1, "run")
-        self.actions = [jump, duck, run]
+        self.actions = [jump, run, duck]
 
     def _press_up(self):
         return self.chrome_driver.driver.find_element_by_tag_name("body").send_keys(Keys.ARROW_UP)
@@ -171,22 +169,25 @@ class State(object):
 
 
 class Agent(object):
-    def __init__(self, game, model, mode, epoch_to_collect_data):
-        self.game = game
+    def __init__(self, model, mode, config):
         self.model = model
-        self.time_to_execute_action = model.get_time_to_execute_action()
         self.mode = mode
-        self.memory = Memory(10000)
-        self.epoch_to_collect_data = epoch_to_collect_data
+        self.game = TRexGame(display=config['display'])
+        self.time_to_execute_action = config['time_to_execute_action']
+        self.memory = Memory(config['memory_size'])
+        self.epoch_to_train = config['epoch_to_train']
         self.training_data = None
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
-        self.preprocessor = Prepocessor(vertical_crop_intervall=(50, 150), horizontal_crop_intervall=(0, 400), buffer_size=4, resize=80)
-        self.num_actions = len(self.game.actions)
-        self.epsilon = 0.3
+        self.preprocessor = Prepocessor(vertical_crop_intervall=config['vertical_crop_intervall'],
+                horizontal_crop_intervall=config['horizontal_crop_intervall'], buffer_size=config['buffer_size'], resize=config['resize_dim'])
+        self.num_actions = config['num_actions']
+        self.epsilon_threshold = 1
+        self.epsilon_threshold_decay = config['epsilon_threshold_decay']
         # Number of elements used for training. The model batch size will later determine how many updates this will lead to.
-        self.num_samples = 32
+        self.batch_size = config['batch_size']
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
+        self.execute()
 
     def execute(self):
         if(self.mode == 'play'):
@@ -200,9 +201,13 @@ class Agent(object):
     def play(self):
         raise NotImplementedError
 
+    def update_epsilon_threshold(self):
+        # TODO: should decrease in time
+        self.epsilon_threshold = self.epsilon_threshold_decay * self.epsilon_threshold
+
     def train(self):
         self.training_data = []
-        for i in range(self.epoch_to_collect_data):
+        for i in range(self.epoch_to_train):
             action_code = 0  # jump to start game
             crashed = False
             image = self.process_action_to_state(action_code).get_image()
@@ -210,10 +215,10 @@ class Agent(object):
             environment_prev = self.preprocessor.process(image)
 
             while not crashed:
-#                if np.random.random() < self.epsilon:
-#                    action = np.random.randint(0, self.num_actions)
-#                else:
-                action = self.model.get_action(environment_prev)
+                if np.random.random() < self.epsilon_threshold:
+                    action = np.random.randint(0, self.num_actions)
+                else:
+                    action = self.model.get_action(environment_prev)
                 state = self.process_action_to_state(action)
 
                 reward = state.get_reward()
@@ -224,16 +229,17 @@ class Agent(object):
                 self.memory.add((environment_prev, action, reward, environment_next, crashed))
 
                 environment_prev = environment_next
-            print("Game {} ended! Score: {}".format(i, self.game.get_score()))
-            ipdb.set_trace()
             self.replay(i)
+            self.update_epsilon_threshold()
+            print("Game {} ended! Score: {}".format(i, self.game.get_score()))
+            print("Randomness factor {}".format(self.epsilon_threshold))
             self.game.restart()
 
     def replay(self, epoch):
-        if self.memory.cur_size < self.num_samples:
+        if self.memory.cur_size < self.batch_size:
             return
 
-        environment_prevs, actions, rewards, environment_nexts, crasheds = self.memory.sample(self.num_samples)
+        environment_prevs, actions, rewards, environment_nexts, crasheds = self.memory.sample(self.batch_size)
         self.model.train(environment_prevs, actions, rewards, environment_nexts, crasheds)
 
     def end(self):
@@ -257,7 +263,7 @@ class Memory(object):
         """
         Args:
             size: storage size
-            state_size: Number of elements one state exists of.
+            sample_size: Number of elements one samlpe exists of.
         """
         # This should be general.
         self.sample_size = sample_size
@@ -303,27 +309,15 @@ class Prepocessor(object):
         image_processed = cv2.resize(image_processed, (self.resize, self.resize))
         image_processed = image_processed / 128 - 1.0
         return image_processed
-    
+
     def process(self, image):
         image_processed = self._process(image)
         self.image_processed_buffer.pop()
         self.image_processed_buffer.appendleft(image_processed)
 
-        # np.asarray performs copy  
+        # np.asarray performs copy
         environment = np.array(self.image_processed_buffer)
         return environment.reshape(self.environment_processed_shape)
 
     def crop_image(self, image):
         return image[self.vertical_crop_start:self.vertical_crop_end, self.horizontal_crop_start:self.horizontal_crop_end]
-
-
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument('--display', default=False, action='store_true')
-    args = parser.parse_args()
-    model = TFRexModel()
-    game = TRexGame(display=args.display)
-    agent = Agent(game=game, model=model, mode='train', epoch_to_collect_data=2)
-    agent.execute()
-    agent.save_environment_screenshots()
-    agent.end()
