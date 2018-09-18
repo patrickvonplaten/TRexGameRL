@@ -4,6 +4,7 @@ from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
 from tensorflow.python.keras.layers import Conv2D, Flatten, Dense
 from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.optimizers import SGD
 from argparse import ArgumentParser
 from tRexManager import Agent
 
@@ -15,18 +16,18 @@ config = {
     'buffer_size': 4,
     'discount_factor': 0.99,
     'batch_size': 32,
-    'learning_rate': 1e-3,
-    'momentum': 0.9,
-    'metrics': ['accuracy'],
-    'loss': 'mean_squared_error',
-    'epoch_to_train': 20,
-    'epsilon_threshold_decay': 0.95,
+    'metrics': ['mse'],
+    'loss': 'mean_squared_logarithmic_error',
+    'epoch_to_train': 10,
+    'epsilon_threshold_decay': 0.99,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
     'resize_dim': 80,
     'buffer_size': 4,
 }
+
+optimizer = SGD(lr=1e-3)
 
 network = Sequential([
     Conv2D(input_shape=(80, 80, 4), filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer='random_uniform'),
@@ -43,6 +44,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config['display'] = args.display
 
-    model = TFRexModel(network=network, config=config)
+    model = TFRexModel(network=network, optimizer=optimizer, config=config)
     agent = Agent(model=model, mode=mode, config=config)
     agent.save_environment_screenshots()

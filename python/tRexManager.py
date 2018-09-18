@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
@@ -11,6 +12,7 @@ import base64
 import numpy as np
 import cv2
 import ipdb
+import datetime
 
 HEIGHT = 150
 WIDTH = 600
@@ -29,7 +31,6 @@ class ChromeDriver(object):
             chrome_options.append('--headless')
         self.driver = self.configure_driver(chrome_options)
         self.data_shape = self.get_image_as(np.uint8).shape
-        print(self.data_shape)
 
     def configure_driver(self, chromeOptions):
         chrome_options = Options()
@@ -60,9 +61,9 @@ class Action(object):
         self.reward = reward
 
     def __call__(self):
-        if self.code:
-            print(self.code)
         self.action()
+#        if self.code:
+#            print(self.code)
 
 
 class Game(object):
@@ -121,7 +122,6 @@ class TRexGame(Game):
     def get_score(self):
         scoreArray = self.chrome_driver.driver.execute_script("return Runner.instance_.distanceMeter.digits")
         score = ''.join(scoreArray)
-        print('Score' + str(score))
         return int(score)
 
     def end(self):
@@ -207,6 +207,7 @@ class Agent(object):
 
     def train(self):
         self.training_data = []
+        start_time = time.time()
         for i in range(self.epoch_to_train):
             action_code = 0  # jump to start game
             crashed = False
@@ -229,18 +230,32 @@ class Agent(object):
                 self.memory.add((environment_prev, action, reward, environment_next, crashed))
 
                 environment_prev = environment_next
-            self.replay(i)
+            loss = self.replay(i)
             self.update_epsilon_threshold()
-            print("Game {} ended! Score: {}".format(i, self.game.get_score()))
-            print("Randomness factor {}".format(self.epsilon_threshold))
+            self.print_train_log(epoch=i+1, start_time=start_time, score=self.game.get_score(), loss=loss, random_factor=self.epsilon_threshold)
+
             self.game.restart()
+
+    def print_train_log(self, epoch, start_time, score, loss, random_factor):
+        time_elapsed = time.time() - start_time
+        avg_time_per_epoch = time_elapsed/(epoch+1)
+        time_elapsed_formatted = datetime.timedelta(seconds=int(time_elapsed))
+        avg_time_per_epoch_formatted = datetime.timedelta(seconds=int(avg_time_per_epoch))
+        loss_formatted = '{:.4f}'.format(loss) if not not loss else 'No train'
+        log = "Epoch: {}/{} | ".format(epoch, self.epoch_to_train)
+        log += "Score: {} | ".format(score)
+        log += "Loss : {} | ".format(loss_formatted)
+        log += "Random train: {0:.2f} | ".format(random_factor)
+        log += "Time elapsed: {} | ".format(time_elapsed_formatted)
+        log += "Avg Time Epoch: {}".format(avg_time_per_epoch_formatted)
+        print(log)
 
     def replay(self, epoch):
         if self.memory.cur_size < self.batch_size:
             return
 
         environment_prevs, actions, rewards, environment_nexts, crasheds = self.memory.sample(self.batch_size)
-        self.model.train(environment_prevs, actions, rewards, environment_nexts, crasheds)
+        return self.model.train(environment_prevs, actions, rewards, environment_nexts, crasheds)[0]
 
     def end(self):
         return self.game.end()
