@@ -13,3 +13,6 @@ python/tags
 __pycache__/
 *.py[cod]
 *$py.class
+
+# h5 weights
+*.h5
