@@ -17,7 +17,7 @@ config = {
     'discount_factor': 0.99,
     'batch_size': 32,
     'metrics': ['mse'],
-    'loss': 'mean_squared_logarithmic_error',
+    'loss': 'logcosh',
     'epoch_to_train': 10,
     'epsilon_threshold_decay': 0.99,
     'vertical_crop_intervall': (50, 150),
