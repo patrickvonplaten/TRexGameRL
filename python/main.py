@@ -19,12 +19,16 @@ config = {
     'metrics': ['mse'],
     'loss': 'logcosh',
     'epoch_to_train': 10,
-    'epsilon_threshold_decay': 0.99,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
     'resize_dim': 80,
     'buffer_size': 4,
+    'warmup_steps': 0,
+    'epsilon_final': 0.05,
+    'decay_fn': 'linearly_decaying_epsilon',
+    'decay_period': 20,
+
 }
 
 optimizer = SGD(lr=1e-3)

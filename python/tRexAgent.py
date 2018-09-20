@@ -6,6 +6,7 @@ from imageio import imwrite
 from tRexGame import TRexGame
 from tRexMemory import Memory
 from tRexPreprocessor import Prepocessor
+import tRexUtils
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../imagesToCheck')
@@ -19,13 +20,15 @@ class Agent(object):
         self.time_to_execute_action = config['time_to_execute_action']
         self.memory = Memory(config['memory_size'])
         self.epoch_to_train = config['epoch_to_train']
+        self.decay_fn = getattr(tRexUtils, config['decay_fn'])
+        self.warmup_steps = config['warmup_steps']
+        self.epsilon_final = config['epsilon_final']
+        self.decay_period = config['decay_period']
         self.training_data = None
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
         self.preprocessor = Prepocessor(vertical_crop_intervall=config['vertical_crop_intervall'],
                 horizontal_crop_intervall=config['horizontal_crop_intervall'], buffer_size=config['buffer_size'], resize=config['resize_dim'])
         self.num_actions = config['num_actions']
-        self.epsilon_threshold = 1
-        self.epsilon_threshold_decay = config['epsilon_threshold_decay']
         # Number of elements used for training. The model batch size will later determine how many updates this will lead to.
         self.batch_size = config['batch_size']
         if not os.path.isdir(self.path_to_image_folder):
@@ -44,9 +47,8 @@ class Agent(object):
     def play(self):
         raise NotImplementedError
 
-    def update_epsilon_threshold(self):
-        # TODO: should decrease in time
-        self.epsilon_threshold = self.epsilon_threshold_decay * self.epsilon_threshold
+    def get_epsilon(self, step):
+        return self.decay_fn(step, self.decay_period, self.warmup_steps, self.epsilon_final)
 
     def train(self):
         self.training_data = []
@@ -54,12 +56,13 @@ class Agent(object):
         for i in range(self.epoch_to_train):
             action_code = 0  # jump to start game
             crashed = False
+            epsilon = self.get_epsilon(i)
             image = self.process_action_to_state(action_code).get_image()
 
             environment_prev = self.preprocessor.process(image)
 
             while not crashed:
-                if np.random.random() < self.epsilon_threshold:
+                if np.random.random() < epsilon:
                     action = np.random.randint(0, self.num_actions)
                 else:
                     action = self.model.get_action(environment_prev)
@@ -74,12 +77,11 @@ class Agent(object):
 
                 environment_prev = environment_next
             loss = self.replay(i)
-            self.update_epsilon_threshold()
-            self.print_train_log(epoch=i+1, start_time=start_time, score=self.game.get_score(), loss=loss, random_factor=self.epsilon_threshold)
+            self.print_train_log(epoch=i+1, start_time=start_time, score=self.game.get_score(), loss=loss, epsilon=epsilon)
 
             self.game.restart()
 
-    def print_train_log(self, epoch, start_time, score, loss, random_factor):
+    def print_train_log(self, epoch, start_time, score, loss, epsilon):
         time_elapsed = time.time() - start_time
         avg_time_per_epoch = time_elapsed/(epoch+1)
         time_elapsed_formatted = datetime.timedelta(seconds=int(time_elapsed))
@@ -88,7 +90,7 @@ class Agent(object):
         log = "Epoch: {}/{} | ".format(epoch, self.epoch_to_train)
         log += "Score: {} | ".format(score)
         log += "Loss : {} | ".format(loss_formatted)
-        log += "Random train: {0:.2f} | ".format(random_factor)
+        log += "Epsilon: {0:.2f} | ".format(epsilon)
         log += "Time elapsed: {} | ".format(time_elapsed_formatted)
         log += "Avg Time Epoch: {}".format(avg_time_per_epoch_formatted)
         print(log)
