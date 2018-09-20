@@ -10,6 +10,7 @@ import tRexUtils
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../imagesToCheck')
+PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
 
 
 class Agent(object):
@@ -37,6 +38,7 @@ class Agent(object):
 
     def execute(self):
         if(self.mode == 'play'):
+            self.model.load_weights(PATH_TO_WEIGHTS)
             self.play()
         if(self.mode == 'train'):
             self.train()
@@ -80,6 +82,7 @@ class Agent(object):
             self.print_train_log(epoch=i+1, start_time=start_time, score=self.game.get_score(), loss=loss, epsilon=epsilon)
 
             self.game.restart()
+        self.model.save_weights(PATH_TO_WEIGHTS)
 
     def print_train_log(self, epoch, start_time, score, loss, epsilon):
         time_elapsed = time.time() - start_time

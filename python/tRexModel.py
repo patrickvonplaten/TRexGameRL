@@ -24,6 +24,13 @@ class TFRexModel(object):
     def get_time_to_execute_action(self):
         return self.time_to_execute_action
 
+    def save_weights(self, path_to_save_weights):
+        self.model.save_weights(path_to_save_weights)
+        print('Saved weights to {}'.format(path_to_save_weights))
+
+    def load_weights(self, path_to_load_weights):
+        self.model.load_weights(path_to_load_weights)
+
     def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
         q_values = self.model.predict_on_batch(environment_prevs)
         max_q_value_next = np.amax(self.model.predict_on_batch(environment_nexts), axis=1)
