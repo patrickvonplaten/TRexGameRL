@@ -6,7 +6,7 @@ from tensorflow.python.keras.layers import Conv2D, Flatten, Dense
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizers import SGD
 from argparse import ArgumentParser
-from tRexManager import Agent
+from tRexAgent import Agent
 
 mode = 'train'
 
