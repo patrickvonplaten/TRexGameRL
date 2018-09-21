@@ -55,17 +55,19 @@ class Agent(object):
     def train(self):
         self.training_data = []
         start_time = time.time()
-        for i in range(self.epoch_to_train):
-            action_code = 0  # jump to start game
-            crashed = False
-            epsilon = self.get_epsilon(i)
-            image = self.process_action_to_state(action_code).get_image()
 
+        for i in range(self.epoch_to_train):
+            image = self.game.restart().get_image()
             environment_prev = self.preprocessor.process(image)
 
+            crashed = False
+            epsilon = self.get_epsilon(i)
+
             while not crashed:
+                random = False
                 if np.random.random() < epsilon:
                     action = np.random.randint(0, self.num_actions)
+                    random = True
                 else:
                     action = self.model.get_action(environment_prev)
                 state = self.process_action_to_state(action)
@@ -79,12 +81,10 @@ class Agent(object):
 
                 environment_prev = environment_next
             loss = self.replay(i)
-            self.print_train_log(epoch=i+1, start_time=start_time, score=self.game.get_score(), loss=loss, epsilon=epsilon)
-
-            self.game.restart()
+            self.print_train_log(epoch=i+1, start_time=start_time, score=self.game.get_score(), loss=loss, epsilon=epsilon, random=random)
         self.model.save_weights(PATH_TO_WEIGHTS)
 
-    def print_train_log(self, epoch, start_time, score, loss, epsilon):
+    def print_train_log(self, epoch, start_time, score, loss, epsilon, random):
         time_elapsed = time.time() - start_time
         avg_time_per_epoch = time_elapsed/(epoch+1)
         time_elapsed_formatted = datetime.timedelta(seconds=int(time_elapsed))
@@ -95,7 +95,8 @@ class Agent(object):
         log += "Loss : {} | ".format(loss_formatted)
         log += "Epsilon: {0:.2f} | ".format(epsilon)
         log += "Time elapsed: {} | ".format(time_elapsed_formatted)
-        log += "Avg Time Epoch: {}".format(avg_time_per_epoch_formatted)
+        log += "Avg Time Epoch: {} | ".format(avg_time_per_epoch_formatted)
+        log += "Random: {}".format(random)
         print(log)
 
     def replay(self, epoch):

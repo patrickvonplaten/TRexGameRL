@@ -49,7 +49,8 @@ class TRexGame(Game):
         return self.chrome_driver.press_down()
 
     def _restart(self):
-        return self.chrome_driver.execute_script("Runner.instance_.restart()")
+        self.chrome_driver.execute_script("Runner.instance_.restart()")
+        return self._start()
 
     def is_crashed(self):
         return self.chrome_driver.execute_script("return Runner.instance_.crashed")
@@ -64,6 +65,9 @@ class TRexGame(Game):
 
     def end(self):
         self.chrome_driver.driver.quit()
+
+    def _start(self):
+        return self._process_action_to_state(0, 0.5)
 
     def _process_action_to_state(self, action_code, time_to_execute_action):
         start_time = time.time()
@@ -94,7 +98,6 @@ class Action(object):
 
     def __call__(self):
         self.action()
-
 
 class State(object):
     def __init__(self, image, reward, crashed, timestamp):

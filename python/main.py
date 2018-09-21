@@ -4,7 +4,7 @@ from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
 from tensorflow.python.keras.layers import Conv2D, Flatten, Dense
 from tensorflow.python.keras.models import Sequential
-from tensorflow.python.keras.optimizers import SGD
+from tensorflow.python.keras.optimizers import SGD, RMSprop
 from argparse import ArgumentParser
 from tRexAgent import Agent
 
@@ -18,7 +18,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epoch_to_train': 1,
+    'epoch_to_train': 30,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
@@ -28,10 +28,10 @@ config = {
     'epsilon_final': 0.05,
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 20,
-
 }
 
-optimizer = SGD(lr=1e-3)
+#optimizer = SGD(lr=1e-4)
+optimizer = RMSprop(lr=1e-4, rho=0.9, epsilon=None, decay=0.0)
 
 network = Sequential([
     Conv2D(input_shape=(80, 80, 4), filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer='random_uniform'),
