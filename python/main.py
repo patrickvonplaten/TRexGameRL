@@ -8,7 +8,7 @@ from tensorflow.python.keras.optimizers import SGD, RMSprop
 from argparse import ArgumentParser
 from tRexAgent import Agent
 
-mode = 'train'
+mode = 'play'
 
 config = {
     'num_actions': 2,
@@ -30,7 +30,6 @@ config = {
     'decay_period': 20,
 }
 
-#optimizer = SGD(lr=1e-4)
 optimizer = RMSprop(lr=1e-4, rho=0.9, epsilon=None, decay=0.0)
 
 network = Sequential([
@@ -50,4 +49,3 @@ if __name__ == "__main__":
 
     model = TFRexModel(network=network, optimizer=optimizer, config=config)
     agent = Agent(model=model, mode=mode, config=config)
-    agent.save_environment_screenshots()

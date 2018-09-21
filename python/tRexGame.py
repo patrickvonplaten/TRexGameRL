@@ -21,7 +21,7 @@ class Game(object):
     def _get_state(self, action):
         raise NotImplementedError()
 
-    def restart(self):
+    def process_to_first_state(self):
         self.timestamp = 0
         return self._restart()
 
@@ -48,9 +48,9 @@ class TRexGame(Game):
     def _press_down(self):
         return self.chrome_driver.press_down()
 
-    def _restart(self):
+    def process_to_first_state(self):
         self.chrome_driver.execute_script("Runner.instance_.restart()")
-        return self._start()
+        return self._process_action_to_state(0, 0.5)
 
     def is_crashed(self):
         return self.chrome_driver.execute_script("return Runner.instance_.crashed")
@@ -65,9 +65,6 @@ class TRexGame(Game):
 
     def end(self):
         self.chrome_driver.driver.quit()
-
-    def _start(self):
-        return self._process_action_to_state(0, 0.5)
 
     def _process_action_to_state(self, action_code, time_to_execute_action):
         start_time = time.time()

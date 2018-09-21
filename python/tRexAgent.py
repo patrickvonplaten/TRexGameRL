@@ -18,7 +18,8 @@ class Agent(object):
     def __init__(self, model, mode, config):
         self.model = model
         self.mode = mode
-        self.game = TRexGame(display=config['display'])
+        display = config['display'] if self.mode is 'train' else True
+        self.game = TRexGame(display=display)
         self.time_to_execute_action = config['time_to_execute_action']
         self.memory = Memory(config['memory_size'])
         self.epoch_to_train = config['epoch_to_train']
@@ -49,7 +50,13 @@ class Agent(object):
         return self.game.process_action_to_state(action_code, self.time_to_execute_action)
 
     def play(self):
-        raise NotImplementedError
+        state = self.game.process_to_first_state()
+        while not state.is_crashed(): 
+            image = state.get_image()
+            environment = self.preprocessor.process(image)
+            action = self.model.get_action(environment)
+            state = self.process_action_to_state(action)
+        print('Final score: {}'.format(self.game.get_score()))
 
     def get_epsilon(self, step):
         return self.decay_fn(step, self.decay_period, self.warmup_steps, self.epsilon_final)
@@ -59,7 +66,7 @@ class Agent(object):
         start_time = time.time()
 
         for i in range(self.epoch_to_train):
-            image = self.game.restart().get_image()
+            image = self.game.process_to_first_state().get_image()
             environment_prev = self.preprocessor.process(image)
 
             crashed = False
