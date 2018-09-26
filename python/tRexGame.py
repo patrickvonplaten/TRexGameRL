@@ -35,7 +35,7 @@ class Game(object):
 
 class TRexGame(Game):
     def __init__(self, display=False):
-        super().__init__()
+        super(Game, self).__init__()
         self.chrome_driver = ChromeDriver(display)
         jump = Action(self._press_up, -5, "jump")
         duck = Action(self._press_down, -3, "duck")

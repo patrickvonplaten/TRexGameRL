@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
@@ -8,7 +8,7 @@ from tensorflow.python.keras.optimizers import SGD, RMSprop
 from argparse import ArgumentParser
 from tRexAgent import Agent
 
-mode = 'play'
+mode = 'train'
 
 config = {
     'num_actions': 2,

@@ -9,7 +9,8 @@ import ipdb
 
 HEIGHT = 150
 WIDTH = 600
-CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver'
+#CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver'
+CHROME_EXECUTABLEPATH = '/u/platen/chromedriver'
 CHROME_PATH = '/usr/bin/google-chrome'
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 TREX_HTML_PATH = 'file://{}/../javascript/index.html'.format(CUR_PATH)
@@ -21,7 +22,6 @@ class ChromeDriver(object):
         if not display:
             chrome_options.append('--headless')
         self.driver = self.configure_driver(chrome_options)
-        self.data_shape = self.get_image_as(np.uint8).shape
 
     def configure_driver(self, chromeOptions):
         chrome_options = Options()
