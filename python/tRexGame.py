@@ -2,6 +2,7 @@ from tRexDriver import ChromeDriver
 from matplotlib import pyplot
 import time
 import numpy as np
+import ipdb
 
 
 class Game(object):
@@ -35,7 +36,7 @@ class Game(object):
 
 class TRexGame(Game):
     def __init__(self, display=False):
-        super(Game, self).__init__()
+        Game.__init__(self)
         self.chrome_driver = ChromeDriver(display)
         jump = Action(self._press_up, -5, "jump")
         duck = Action(self._press_down, -3, "duck")
