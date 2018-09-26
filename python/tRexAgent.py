@@ -18,7 +18,6 @@ class Agent(object):
     def __init__(self, model, mode, config):
         self.model = model
         self.mode = mode
-        display = config['display'] if self.mode is 'train' else True
         self.game = TRexGame(display=display)
         self.time_to_execute_action = config['time_to_execute_action']
         self.memory = Memory(config['memory_size'])

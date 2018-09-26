@@ -9,18 +9,17 @@ import ipdb
 
 HEIGHT = 150
 WIDTH = 600
-#CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver'
-CHROME_EXECUTABLEPATH = '/u/platen/chromedriver'
-CHROME_PATH = '/usr/bin/google-chrome'
+
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+CHROME_EXECUTABLEPATH = CUR_PATH + '/../chromedriver'
+CHROME_PATH = '/usr/bin/google-chrome'
 TREX_HTML_PATH = 'file://{}/../javascript/index.html'.format(CUR_PATH)
 
 
 class ChromeDriver(object):
     def __init__(self, display):
         chrome_options = ['disable-infobars']
-        if not display:
-            chrome_options.append('--headless')
+        chrome_options.append('--headless')
         self.driver = self.configure_driver(chrome_options)
 
     def configure_driver(self, chromeOptions):

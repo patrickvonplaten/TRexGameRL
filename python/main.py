@@ -42,10 +42,5 @@ network = Sequential([
 ])
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument('--display', default=False, action='store_true')
-    args = parser.parse_args()
-    config['display'] = args.display
-
     model = TFRexModel(network=network, optimizer=optimizer, config=config)
     agent = Agent(model=model, mode=mode, config=config)
