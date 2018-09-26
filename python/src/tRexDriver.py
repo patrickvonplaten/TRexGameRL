@@ -12,20 +12,23 @@ WIDTH = 600
 CHROME_EXECUTABLEPATH = '/usr/bin/chromedriver'
 CHROME_PATH = '/usr/bin/google-chrome'
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
-TREX_HTML_PATH = 'file://{}/../javascript/index.html'.format(CUR_PATH)
+TREX_HTML_PATH = 'file://{}/../../javascript/index.html'.format(CUR_PATH)
 
 
 class ChromeDriver(object):
     def __init__(self, display):
-        chrome_options = ['disable-infobars']
-        if not display:
-            chrome_options.append('--headless')
-        self.driver = self.configure_driver(chrome_options)
-        self.data_shape = self.get_image_as(np.uint8).shape
+        options = self.set_options(display)
+        self.driver = self.configure_driver(options)
 
-    def configure_driver(self, chromeOptions):
+    def set_options(self, display):
+        options = ['disable-infobars']
+        if not display:
+            options.append('--headless')
+        return options
+
+    def configure_driver(self, options):
         chrome_options = Options()
-        for option in chromeOptions:
+        for option in options:
             chrome_options.add_argument(option)
         chrome_options.binary_location = CHROME_PATH
 

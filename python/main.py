@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+import os
+import sys
+
+CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+PATH_TO_TREX_MODULES = CUR_PATH+'/src'
+sys.path.insert(0, PATH_TO_TREX_MODULES)
+
 from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
 from tensorflow.python.keras.layers import Conv2D, Flatten, Dense

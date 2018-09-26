@@ -7,19 +7,19 @@ from tRexMemory import Memory
 from tRexPreprocessor import Prepocessor
 from tRexLogger import Logger
 import tRexUtils
+import ipdb
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
-PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../imagesToCheck')
-PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
-PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
+PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
+PATH_TO_WEIGHTS = os.path.join(CUR_PATH, '../model.h5')
+PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, '../train_log.txt')
 
 
 class Agent(object):
     def __init__(self, model, mode, config):
         self.model = model
         self.mode = mode
-        display = config['display'] if self.mode is 'train' else True
-        self.game = TRexGame(display=display)
+        self.game = TRexGame(display=config['display'])
         self.time_to_execute_action = config['time_to_execute_action']
         self.memory = Memory(config['memory_size'])
         self.epoch_to_train = config['epoch_to_train']
@@ -51,7 +51,7 @@ class Agent(object):
 
     def play(self):
         state = self.game.process_to_first_state()
-        while not state.is_crashed(): 
+        while not state.is_crashed():
             image = state.get_image()
             environment = self.preprocessor.process(image)
             action = self.model.get_action(environment)
