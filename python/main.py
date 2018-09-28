@@ -15,7 +15,7 @@ from tensorflow.python.keras.optimizers import SGD, RMSprop
 from argparse import ArgumentParser
 from tRexAgent import Agent
 
-mode = 'play'
+mode = 'train'
 
 config = {
     'num_actions': 2,
