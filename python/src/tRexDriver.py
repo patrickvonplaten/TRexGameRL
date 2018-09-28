@@ -11,9 +11,9 @@ HEIGHT = 150
 WIDTH = 600
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
-CHROME_EXECUTABLEPATH = CUR_PATH + '/../chromedriver'
+CHROME_EXECUTABLEPATH = CUR_PATH + '/../../chromedriver'
 CHROME_PATH = '/usr/bin/google-chrome'
-TREX_HTML_PATH = 'file://{}/../javascript/index.html'.format(CUR_PATH)
+TREX_HTML_PATH = 'file://{}/../../javascript/index.html'.format(CUR_PATH)
 
 
 class ChromeDriver(object):

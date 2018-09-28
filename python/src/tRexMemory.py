@@ -21,7 +21,7 @@ class Memory(object):
     def add(self, training_sample):
         """Adds training sample to the storage.
 
-        Args (State): The state to store.
+        Args (training_sample): The training sample to store.
         """
         self.storage[self.pos] = training_sample
         self.pos = (self.pos + 1) % self.size

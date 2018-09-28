@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+import sys
+PATH_TO_TREX_MODULES='/u/platen/TRexGameRL/python/src'
+sys.path.insert(0,PATH_TO_TREX_MODULES)
 
 from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
@@ -7,6 +10,7 @@ from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizers import SGD, RMSprop
 from argparse import ArgumentParser
 from tRexAgent import Agent
+import ipdb
 
 mode = 'train'
 

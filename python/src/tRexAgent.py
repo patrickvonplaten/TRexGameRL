@@ -7,9 +7,10 @@ from tRexMemory import Memory
 from tRexPreprocessor import Prepocessor
 from tRexLogger import Logger
 import tRexUtils
+import ipdb
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
-PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../imagesToCheck')
+PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
 PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
 
@@ -65,8 +66,9 @@ class Agent(object):
         start_time = time.time()
 
         for i in range(self.epoch_to_train):
-            image = self.game.process_to_first_state().get_image()
-            environment_prev = self.preprocessor.process(image)
+            first_state = self.game.process_to_first_state()
+            self.training_data.append(first_state)
+            environment_prev = self.preprocessor.process(first_state.get_image())
 
             crashed = False
             epsilon = self.get_epsilon(i)
@@ -79,6 +81,7 @@ class Agent(object):
                 else:
                     action = self.model.get_action(environment_prev)
                 state = self.process_action_to_state(action)
+                self.training_data.append(state)
 
                 reward = state.get_reward()
                 crashed = state.is_crashed()
@@ -105,10 +108,9 @@ class Agent(object):
         return self.game.end()
 
     def save_environment_screenshots(self, save_every_x=1):
-        for epoch, epoch_data in enumerate(self.training_data):
-            for state in epoch_data[::save_every_x]:
-                image = state.get_image()
-                image_name = 'env_{}_{}.jpg'.format(epoch, state.get_time_stamp())
-                imwrite(os.path.join(self.path_to_image_folder, image_name), image)
+        for state_idx, state in enumerate(self.training_data[::save_every_x]):
+            image = self.preprocessor._process(state.get_image())
+            image_name = 'env_{}_{}.jpg'.format(state_idx, state.get_time_stamp())
+            imwrite(os.path.join(self.path_to_image_folder, image_name), image)
 
         print("Saved images to {}".format(self.path_to_image_folder))
