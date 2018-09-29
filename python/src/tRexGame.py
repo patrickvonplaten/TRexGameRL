@@ -24,10 +24,16 @@ class Game(object):
 
     def process_to_first_state(self):
         self.timestamp = 0
-        return self._restart()
+        return self._process_to_first_state()
 
     def end(self):
         raise NotImplementedError()
+
+    def restart(self):
+        return self._restart()
+
+    def start(self):
+        return self._start()
 
     def process_action_to_state(self, action_code, time_to_execute_action):
         self.timestamp += 1
@@ -35,9 +41,10 @@ class Game(object):
 
 
 class TRexGame(Game):
-    def __init__(self, display=False):
+    def __init__(self, display=False, wait_after_restart=0):
         Game.__init__(self)
         self.chrome_driver = ChromeDriver(display)
+        self.wait_after_restart = wait_after_restart
         jump = Action(self._press_up, -5, "jump")
         duck = Action(self._press_down, -3, "duck")
         run = Action(lambda: None, 1, "run")
@@ -49,9 +56,18 @@ class TRexGame(Game):
     def _press_down(self):
         return self.chrome_driver.press_down()
 
-    def process_to_first_state(self):
+    def _process_to_first_state(self):
+        self._restart()
+        return self._process_action_to_state(1, self.wait_after_restart)
+
+    def _restart(self):
         self.chrome_driver.execute_script("Runner.instance_.restart()")
-        return self._process_action_to_state(0, 3)
+
+    def _start(self):
+        # TODO: the very first time game is play _restart() function does not work
+        # and runner waits the waiting time. For long training times that might be irrelevant
+        # but can surely be solved
+        pass
 
     def is_crashed(self):
         return self.chrome_driver.execute_script("return Runner.instance_.crashed")
@@ -96,6 +112,7 @@ class Action(object):
 
     def __call__(self):
         self.action()
+
 
 class State(object):
     def __init__(self, image, reward, crashed, timestamp):
