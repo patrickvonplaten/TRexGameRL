@@ -5,6 +5,9 @@ CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_TREX_MODULES = CUR_PATH + '/src'
 sys.path.insert(0,PATH_TO_TREX_MODULES)
 
+PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
+PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
+
 from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
 from tensorflow.python.keras.layers import Conv2D, Flatten, Dense
@@ -17,6 +20,8 @@ import ipdb
 mode = 'train'
 
 config = {
+    'PATH_TO_WEIGHTS': PATH_TO_WEIGHTS,
+    'PATH_TO_LOG_FILE_TRAIN': PATH_TO_LOG_FILE_TRAIN,
     'num_actions': 2,
     'time_to_execute_action': 0.1,
     'buffer_size': 4,
@@ -24,7 +29,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epoch_to_train': 3,
+    'epoch_to_train': 1,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
@@ -56,5 +61,4 @@ if __name__ == "__main__":
 
     model = TFRexModel(network=network, optimizer=optimizer, config=config)
     agent = Agent(model=model, mode=mode, config=config)
-    agent.save_environment_screenshots()
     agent.end()

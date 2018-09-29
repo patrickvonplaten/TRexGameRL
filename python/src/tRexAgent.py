@@ -11,11 +11,11 @@ import ipdb
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
-PATH_TO_WEIGHTS = os.path.join(CUR_PATH, '../model.h5')
-PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, '../train_log.txt')
 
 class Agent(object):
     def __init__(self, model, mode, config):
+        self.PATH_TO_WEIGHTS = config['PATH_TO_WEIGHTS']
+        self.PATH_TO_LOG_FILE_TRAIN  = config['PATH_TO_LOG_FILE_TRAIN']
         self.model = model
         self.mode = mode
         self.game = TRexGame(display=config['display'], wait_after_restart=config['wait_after_restart'])
@@ -33,14 +33,14 @@ class Agent(object):
         self.num_actions = config['num_actions']
         # Number of elements used for training. The model batch size will later determine how many updates this will lead to.
         self.batch_size = config['batch_size']
-        self.logger = Logger(PATH_TO_LOG_FILE_TRAIN)
+        self.logger = Logger(self.PATH_TO_LOG_FILE_TRAIN)
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
         self.execute()
 
     def execute(self):
         if(self.mode == 'play'):
-            self.model.load_weights(PATH_TO_WEIGHTS)
+            self.model.load_weights(self.PATH_TO_WEIGHTS)
             self.play()
         if(self.mode == 'train'):
             self.train()
@@ -96,7 +96,7 @@ class Agent(object):
             self.logger.log_parameter(epoch=i+1, start_time=start_time, score=self.game.get_score(),
                     loss=loss, epsilon=epsilon, random=random, epoch_to_train=self.epoch_to_train)
 
-        self.model.save_weights(PATH_TO_WEIGHTS)
+        self.model.save_weights(self.PATH_TO_WEIGHTS)
         self.logger.close()
 
     def replay(self, epoch):
