@@ -11,9 +11,8 @@ import ipdb
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
-PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
-PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
-
+PATH_TO_WEIGHTS = os.path.join(CUR_PATH, '../model.h5')
+PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, '../train_log.txt')
 
 class Agent(object):
     def __init__(self, model, mode, config):
