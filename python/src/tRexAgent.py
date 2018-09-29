@@ -19,7 +19,7 @@ class Agent(object):
     def __init__(self, model, mode, config):
         self.model = model
         self.mode = mode
-        self.game = TRexGame(display=display)
+        self.game = TRexGame(display=config['display'], wait_after_restart=config['wait_after_restart'])
         self.time_to_execute_action = config['time_to_execute_action']
         self.memory = Memory(config['memory_size'])
         self.epoch_to_train = config['epoch_to_train']
@@ -51,7 +51,7 @@ class Agent(object):
 
     def play(self):
         state = self.game.process_to_first_state()
-        while not state.is_crashed(): 
+        while not state.is_crashed():
             image = state.get_image()
             environment = self.preprocessor.process(image)
             action = self.model.get_action(environment)
@@ -64,6 +64,7 @@ class Agent(object):
     def train(self):
         self.training_data = []
         start_time = time.time()
+#        self.game.start()
 
         for i in range(self.epoch_to_train):
             first_state = self.game.process_to_first_state()
@@ -80,6 +81,7 @@ class Agent(object):
                     random = True
                 else:
                     action = self.model.get_action(environment_prev)
+
                 state = self.process_action_to_state(action)
                 self.training_data.append(state)
 
@@ -89,11 +91,12 @@ class Agent(object):
                 environment_next = self.preprocessor.process(image)
 
                 self.memory.add((environment_prev, action, reward, environment_next, crashed))
-
                 environment_prev = environment_next
+
             loss = self.replay(i)
             self.logger.log_parameter(epoch=i+1, start_time=start_time, score=self.game.get_score(),
                     loss=loss, epsilon=epsilon, random=random, epoch_to_train=self.epoch_to_train)
+
         self.model.save_weights(PATH_TO_WEIGHTS)
         self.logger.close()
 
