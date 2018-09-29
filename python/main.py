@@ -25,7 +25,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epoch_to_train': 2,
+    'epoch_to_train': 3,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
@@ -35,6 +35,7 @@ config = {
     'epsilon_final': 0.05,
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 20,
+    'wait_after_restart': 1.5,
 }
 
 optimizer = RMSprop(lr=1e-4, rho=0.9, epsilon=None, decay=0.0)
@@ -56,3 +57,5 @@ if __name__ == "__main__":
 
     model = TFRexModel(network=network, optimizer=optimizer, config=config)
     agent = Agent(model=model, mode=mode, config=config)
+    agent.save_environment_screenshots()
+    agent.end()

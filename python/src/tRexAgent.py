@@ -19,7 +19,7 @@ class Agent(object):
     def __init__(self, model, mode, config):
         self.model = model
         self.mode = mode
-        self.game = TRexGame(display=config['display'])
+        self.game = TRexGame(display=config['display'], wait_after_restart=config['wait_after_restart'])
         self.time_to_execute_action = config['time_to_execute_action']
         self.memory = Memory(config['memory_size'])
         self.epoch_to_train = config['epoch_to_train']
@@ -64,10 +64,12 @@ class Agent(object):
     def train(self):
         self.training_data = []
         start_time = time.time()
+#        self.game.start()
 
         for i in range(self.epoch_to_train):
-            image = self.game.process_to_first_state().get_image()
-            environment_prev = self.preprocessor.process(image)
+            first_state = self.game.process_to_first_state()
+            self.training_data.append(first_state)
+            environment_prev = self.preprocessor.process(first_state.get_image())
 
             crashed = False
             epsilon = self.get_epsilon(i)
@@ -79,7 +81,9 @@ class Agent(object):
                     random = True
                 else:
                     action = self.model.get_action(environment_prev)
+
                 state = self.process_action_to_state(action)
+                self.training_data.append(state)
 
                 reward = state.get_reward()
                 crashed = state.is_crashed()
@@ -87,11 +91,12 @@ class Agent(object):
                 environment_next = self.preprocessor.process(image)
 
                 self.memory.add((environment_prev, action, reward, environment_next, crashed))
-
                 environment_prev = environment_next
+
             loss = self.replay(i)
             self.logger.log_parameter(epoch=i+1, start_time=start_time, score=self.game.get_score(),
                     loss=loss, epsilon=epsilon, random=random, epoch_to_train=self.epoch_to_train)
+
         self.model.save_weights(PATH_TO_WEIGHTS)
         self.logger.close()
 
@@ -106,10 +111,8 @@ class Agent(object):
         return self.game.end()
 
     def save_environment_screenshots(self, save_every_x=1):
-        for epoch, epoch_data in enumerate(self.training_data):
-            for state in epoch_data[::save_every_x]:
-                image = state.get_image()
-                image_name = 'env_{}_{}.jpg'.format(epoch, state.get_time_stamp())
-                imwrite(os.path.join(self.path_to_image_folder, image_name), image)
-
+        for state_idx, state in enumerate(self.training_data[::save_every_x]):
+            image = self.preprocessor._process(state.get_image())
+            image_name = 'env_{}_{}.jpg'.format(state_idx, state.get_time_stamp())
+            imwrite(os.path.join(self.path_to_image_folder, image_name), image)
         print("Saved images to {}".format(self.path_to_image_folder))
