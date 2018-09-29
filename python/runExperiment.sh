@@ -14,6 +14,8 @@ mkdir ${setupPath}
 cd ${setupPath}
 
 cp ${curPath}/main.py ${setupPath} 
+sed -i '/CUR_PATH = os.*/d' ${setupPath}/main.py
+sed -i '/PATH_TO_TREX_MODULES =*/c\PATH_TO_TREX_MODULES = "\/u\/platen\/TRexGameRL\/python\/src"' ${setupPath}/main.py
 cp ${curPath}/doit.sh ${setupPath}
 
 cd ${setupPath}
