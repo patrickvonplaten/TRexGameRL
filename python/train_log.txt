@@ -1,3 +1,0 @@
-epoch: 1/3 | score: 47 | loss: 87303421952.0000 | epsilon: 1.0 | time elapsed: 0:00:07 | avg time per epoch: 0:00:03 | random: True | 
-epoch: 2/3 | score: 42 | loss: 111301165056.0000 | epsilon: 0.95 | time elapsed: 0:00:12 | avg time per epoch: 0:00:04 | random: True | 
-epoch: 3/3 | score: 43 | loss: 28042489856.0000 | epsilon: 0.9 | time elapsed: 0:00:17 | avg time per epoch: 0:00:04 | random: True | 

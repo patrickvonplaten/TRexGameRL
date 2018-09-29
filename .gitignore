@@ -16,3 +16,4 @@ __pycache__/
 
 # h5 weights
 *.h5
+python/train_log.txt
