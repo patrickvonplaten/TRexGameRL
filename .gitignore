@@ -19,3 +19,4 @@ __pycache__/
 
 # files
 chromedriver
+python/experiments/*
