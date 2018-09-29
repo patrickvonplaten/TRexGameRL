@@ -20,3 +20,4 @@ __pycache__/
 # files
 chromedriver
 python/experiments/*
+python/train_log.txt
