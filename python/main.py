@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import sys
-PATH_TO_TREX_MODULES='/u/platen/TRexGameRL/python/src'
+import os
+CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+PATH_TO_TREX_MODULES = CUR_PATH + '/src'
 sys.path.insert(0,PATH_TO_TREX_MODULES)
 
 import os
@@ -54,6 +56,11 @@ network = Sequential([
 ])
 
 if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument('--display', default=False, action='store_true')
+    args = parser.parse_args()
+    config['display'] = args.display
+
     model = TFRexModel(network=network, optimizer=optimizer, config=config)
     agent = Agent(model=model, mode=mode, config=config)
     agent.save_environment_screenshots()
