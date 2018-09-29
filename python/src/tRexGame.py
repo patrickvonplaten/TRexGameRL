@@ -51,7 +51,7 @@ class TRexGame(Game):
 
     def process_to_first_state(self):
         self.chrome_driver.execute_script("Runner.instance_.restart()")
-        return self._process_action_to_state(0, 0.5)
+        return self._process_action_to_state(0, 3)
 
     def is_crashed(self):
         return self.chrome_driver.execute_script("return Runner.instance_.crashed")

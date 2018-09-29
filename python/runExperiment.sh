@@ -8,8 +8,6 @@ if [ $# -eq 0 ]
   exit
 fi
 
-python='/u/platen/virtualenvironment/tRex/bin/python'
-
 curPath=$(pwd)
 setupPath=${curPath}/experiments/${nameOfExperiment}
 mkdir ${setupPath}
@@ -19,5 +17,5 @@ cp ${curPath}/main.py ${setupPath}
 cp ${curPath}/doit.sh ${setupPath}
 
 cd ${setupPath}
-qint doit.sh
-#qint -t blabla.1 doit.sh tRexTraining
+#qint doit.sh
+qint -t blabla.1 doit.sh tRexTraining

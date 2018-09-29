@@ -22,7 +22,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epoch_to_train': 2,
+    'epoch_to_train': 1,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
@@ -48,3 +48,4 @@ network = Sequential([
 if __name__ == "__main__":
     model = TFRexModel(network=network, optimizer=optimizer, config=config)
     agent = Agent(model=model, mode=mode, config=config)
+    agent.save_environment_screenshots()
