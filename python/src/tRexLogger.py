@@ -5,7 +5,10 @@ import datetime
 class Logger(object):
 
     def __init__(self, file_name):
-        self.file = open(file_name, 'w')
+        self.file_name = file_name
+        self.file = None
+        self.open()
+        self.close()
 
     def create_log(self, parameters):
         log = ''
@@ -29,6 +32,9 @@ class Logger(object):
     def close(self):
         self.file.close()
 
+    def open(self):
+        self.file = open(self.file_name, 'a')
+
     def log_parameter(self, epoch, epoch_to_train, start_time, score, loss, epsilon, random):
         time_elapsed, avg_time_per_epoch = self.format_running_times(start_time, epoch)
         log = self.create_log({
@@ -41,4 +47,6 @@ class Logger(object):
             'random': random
         })
         print(log)
+        self.open()
         self.file.write(log + '\n')
+        self.close()

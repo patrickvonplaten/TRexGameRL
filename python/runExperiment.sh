@@ -22,4 +22,6 @@ cp ${curPath}/doit.sh ${setupPath}
 
 cd ${setupPath}
 #qint doit.sh
-qint -t blabla.1 doit.sh tRexTraining
+#qint -t blabla.1 doit.sh tRexTraining
+./main.py
+
