@@ -1,7 +1,11 @@
 import numpy as np
 import ipdb
+import os
 from tensorflow.python.keras.models import clone_model
+from tensorflow.python.keras.callbacks import TensorBoard
 
+CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+TENSORBOARD_LOG = os.path.join(CUR_PATH, '../log')
 
 class TFRexModel(object):
     def __init__(self, config, network, optimizer):
@@ -15,6 +19,8 @@ class TFRexModel(object):
         self.train_model = network
         self.target_model = clone_model(self.train_model)
         self.optimizer = optimizer
+        self.tensor_board = TensorBoard(log_dir=TENSORBOARD_LOG, histogram_freq=0, write_graph=True, write_images=True)
+        self.tensor_board.set_model(self.train_model)
         self.compile_train_model()
 
     def get_action(self, environment):
