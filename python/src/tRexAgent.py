@@ -104,8 +104,8 @@ class Agent(object):
         if self.memory.cur_size < self.batch_size:
             return
 
-        environment_prevs, actions, rewards, environment_nexts, crasheds = self.memory.sample(self.batch_size)
-        return self.model.train(environment_prevs, actions, rewards, environment_nexts, crasheds)[0]
+        batch = self.memory.sample(self.batch_size)
+        return self.model.train(batch)
 
     def end(self):
         return self.game.end()

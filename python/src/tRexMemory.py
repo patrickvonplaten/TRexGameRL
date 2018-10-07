@@ -1,4 +1,5 @@
 import numpy as np
+import ipdb
 
 
 class Memory(object):
@@ -31,6 +32,4 @@ class Memory(object):
         """Sample n images from memory."""
         num_samples = min(n, self.cur_size)
         idxs = np.random.choice(self.cur_size, num_samples, replace=False)
-        sample = self.storage[idxs]
-        # stack returns an uint8 array TODO not sure why this works
-        return (np.stack(sample[:, i], axis=0) for i in range(self.sample_size))
+        return self.storage[idxs]

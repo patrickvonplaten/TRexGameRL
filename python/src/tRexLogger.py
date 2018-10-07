@@ -21,7 +21,7 @@ class Logger(object):
         return time_elapsed_formatted, avg_time_per_epoch_formatted
 
     def format_loss(self, loss):
-        return '{:.4f}'.format(loss) if not not loss else 'No train'
+        return '{:.4f}'.format(loss[0]) if not not loss else 'No train'
 
     def format_epoch(self, epoch, epoch_to_train):
         return '{}/{}'.format(epoch, epoch_to_train)
