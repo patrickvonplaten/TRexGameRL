@@ -121,7 +121,7 @@ class Agent(object):
 
     def get_sum_of_q_values_over_control_envs(self):
         # get the predicted q from a control set. Good for plotting progress (see Atari paper)
-        q_values = self.model.predict_on_batch(self.control_environments)
+        q_values = self.model.predict_on_batch(self.control_environments, self.model.train_model)
         return np.average(np.max(q_values, axis=1))
 
     def get_random_state(self, prev_state):
