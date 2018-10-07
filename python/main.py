@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
-
-import os
+#!/usr/bin/env python
 import sys
-
+import os
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
-PATH_TO_TREX_MODULES = CUR_PATH+'/src'
-sys.path.insert(0, PATH_TO_TREX_MODULES)
+PATH_TO_TREX_MODULES = CUR_PATH + '/src'
+sys.path.insert(0,PATH_TO_TREX_MODULES)
+
+PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
+PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
 
 PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
 PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
@@ -17,6 +18,7 @@ from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizers import SGD, RMSprop
 from argparse import ArgumentParser
 from tRexAgent import Agent
+import ipdb
 
 mode = 'train'
 
@@ -30,19 +32,19 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epoch_to_train': 10,
+    'epoch_to_train': 5000,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
     'resize_dim': 80,
     'buffer_size': 4,
-    'warmup_steps': 0,
+    'warmup_steps': 20,
     'epsilon_final': 0.05,
     'decay_fn': 'linearly_decaying_epsilon',
-    'decay_period': 20,
+    'decay_period': 1500,
     'wait_after_restart': 1.5,
-    'num_control_environments': 100,
-    'copy_train_to_target_every_epoch': 10,
+    'num_control_environments': 2,
+    'copy_train_to_target_every_epoch': 1,
 }
 
 optimizer = RMSprop(lr=1e-3, rho=0.9, epsilon=None, decay=0.0)
