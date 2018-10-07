@@ -8,6 +8,9 @@ sys.path.insert(0,PATH_TO_TREX_MODULES)
 PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
 PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
 
+PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
+PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
+
 from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
 from tensorflow.python.keras.layers import Conv2D, Flatten, Dense
@@ -40,9 +43,10 @@ config = {
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 1500,
     'wait_after_restart': 1.5,
+    'num_control_environments': 100,
 }
 
-optimizer = RMSprop(lr=1e-4, rho=0.9, epsilon=None, decay=0.0)
+optimizer = RMSprop(lr=1e-3, rho=0.9, epsilon=None, decay=0.0)
 
 network = Sequential([
     Conv2D(input_shape=(80, 80, 4), filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer='random_uniform'),

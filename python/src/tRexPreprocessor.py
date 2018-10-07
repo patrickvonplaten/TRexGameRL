@@ -24,12 +24,15 @@ class Prepocessor(object):
         image_processed = image_processed / 128 - 1.0
         return image_processed
 
+    def reset(self):
+        self.image_processed_buffer = deque([np.zeros((self.resize, self.resize), dtype=np.uint8) for i in range(self.buffer_size)], maxlen=self.buffer_size)
+
     def process(self, image):
         image_processed = self._process(image)
         self.image_processed_buffer.pop()
         self.image_processed_buffer.appendleft(image_processed)
 
-        # np.asarray performs copy
+        # np.array performs copy
         environment = np.array(self.image_processed_buffer)
         return environment.reshape(self.environment_processed_shape)
 
