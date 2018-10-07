@@ -12,6 +12,7 @@ import ipdb
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 
+
 class Agent(object):
     def __init__(self, model, mode, config):
         self.PATH_TO_WEIGHTS = config['PATH_TO_WEIGHTS']
@@ -29,6 +30,7 @@ class Agent(object):
         self.num_actions = config['num_actions']
         self.batch_size = config['batch_size']
         self.num_control_environments = config['num_control_environments']
+        self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
         self.mode = mode
         self.model = model
         self.preprocessor = Prepocessor(vertical_crop_intervall=config['vertical_crop_intervall'],
@@ -106,6 +108,8 @@ class Agent(object):
         if self.memory.cur_size < self.batch_size:
             return
         batch = self.memory.sample(self.batch_size)
+        if(epoch % self.copy_train_to_target_every_epoch is 0):
+            self.model.copy_weights_to_target_model()
         return self.model.train(batch)
 
     def collect_control_environment_set(self, num_control_environments):
