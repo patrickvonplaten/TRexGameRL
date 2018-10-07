@@ -32,11 +32,14 @@ class TFRexModel(object):
         self.model.load_weights(path_to_load_weights)
 
     def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
-        q_values = self.model.predict_on_batch(environment_prevs)
+        q_values = self.predict_on_batch(environment_prevs)
         max_q_value_next = np.amax(self.model.predict_on_batch(environment_nexts), axis=1)
         max_q_value_next[crasheds] = 0
         q_values[np.arange(q_values.shape[0]), actions] = rewards + self.discount_factor * max_q_value_next
         return q_values
+
+    def predict_on_batch(self, environments):
+        return self.model.predict_on_batch(environments)
 
     def compile_model(self):
         # optimizer in construct, otherwise running stats will be reset!

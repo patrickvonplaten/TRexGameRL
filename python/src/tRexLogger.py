@@ -1,5 +1,6 @@
 import time
 import datetime
+import ipdb
 
 
 class Logger(object):
@@ -21,7 +22,10 @@ class Logger(object):
         return time_elapsed_formatted, avg_time_per_epoch_formatted
 
     def format_loss(self, loss):
-        return '{:.4f}'.format(loss[0]) if not not loss else 'No train'
+        return self.format_float(loss[0]) if not not loss else 'No train'
+
+    def format_float(self, float_value):
+        return '{:.4f}'.format(float_value)
 
     def format_epoch(self, epoch, epoch_to_train):
         return '{}/{}'.format(epoch, epoch_to_train)
@@ -29,16 +33,17 @@ class Logger(object):
     def close(self):
         self.file.close()
 
-    def log_parameter(self, epoch, epoch_to_train, start_time, score, loss, epsilon, random):
+    def log_parameter(self, epoch, epoch_to_train, start_time, score, loss, epsilon, reward_sum, avg_control_q):
         time_elapsed, avg_time_per_epoch = self.format_running_times(start_time, epoch)
         log = self.create_log({
             'epoch': self.format_epoch(epoch, epoch_to_train),
             'score': score,
             'loss': self.format_loss(loss),
+            'reward': reward_sum,
+            'avg_q': self.format_float(avg_control_q),
             'epsilon': round(epsilon, 2),
             'time elapsed': time_elapsed,
             'avg time per epoch': avg_time_per_epoch,
-            'random': random
         })
         print(log)
         self.file.write(log + '\n')

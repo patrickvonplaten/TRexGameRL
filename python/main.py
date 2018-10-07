@@ -41,6 +41,7 @@ config = {
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 20,
     'wait_after_restart': 1.5,
+    'num_control_environments': 10,
 }
 
 optimizer = RMSprop(lr=1e-4, rho=0.9, epsilon=None, decay=0.0)
