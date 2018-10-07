@@ -30,7 +30,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epoch_to_train': 1,
+    'epoch_to_train': 10,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
@@ -41,10 +41,10 @@ config = {
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 20,
     'wait_after_restart': 1.5,
-    'num_control_environments': 10,
+    'num_control_environments': 100,
 }
 
-optimizer = RMSprop(lr=1e-4, rho=0.9, epsilon=None, decay=0.0)
+optimizer = RMSprop(lr=1e-3, rho=0.9, epsilon=None, decay=0.0)
 
 network = Sequential([
     Conv2D(input_shape=(80, 80, 4), filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer='random_uniform'),

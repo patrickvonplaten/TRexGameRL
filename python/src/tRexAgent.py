@@ -66,7 +66,6 @@ class Agent(object):
         self.training_data = []
         self.collect_control_environment_set(self.num_control_environments)
         start_time = time.time()
-#        self.game.start()
 
         for i in range(self.epoch_to_train):
             first_state = self.game.process_to_first_state()

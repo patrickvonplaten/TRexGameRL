@@ -31,9 +31,6 @@ class Game(object):
     def restart(self):
         return self._restart()
 
-    def start(self):
-        return self._start()
-
     def process_action_to_state(self, action_code, time_to_execute_action):
         self.timestamp += 1
         return self._process_action_to_state(action_code, time_to_execute_action)
@@ -44,9 +41,9 @@ class TRexGame(Game):
         super().__init__()
         self.chrome_driver = ChromeDriver(display)
         self.wait_after_restart = wait_after_restart
-        jump = Action(self._press_up, -5, "jump")
+        jump = Action(self._press_up, -1, "jump")
         duck = Action(self._press_down, -3, "duck")
-        run = Action(lambda: None, 1, "run")
+        run = Action(lambda: None, 0, "run")
         self.actions = [jump, run, duck]
 
     def _press_up(self):
@@ -61,12 +58,6 @@ class TRexGame(Game):
 
     def _restart(self):
         self.chrome_driver.execute_script("Runner.instance_.restart()")
-
-    def _start(self):
-        # TODO: the very first time game is play _restart() function does not work 
-        # and runner waits the waiting time. For long training times that might be irrelevant
-        # but can surely be solved
-        pass
 
     def is_crashed(self):
         return self.chrome_driver.execute_script("return Runner.instance_.crashed")
