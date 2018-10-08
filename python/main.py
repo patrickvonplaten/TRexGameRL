@@ -5,11 +5,8 @@ CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_TREX_MODULES = CUR_PATH + '/src'
 sys.path.insert(0, PATH_TO_TREX_MODULES)
 
-PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
-PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
-
-PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
-PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
+PATH_TO_WEIGHTS = os.path.join(CUR_PATH, './weights')
+PATH_TO_LOG = os.path.join(CUR_PATH, './log')
 
 from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
@@ -24,7 +21,9 @@ mode = 'train'
 
 config = {
     'PATH_TO_WEIGHTS': PATH_TO_WEIGHTS,
-    'PATH_TO_LOG_FILE_TRAIN': PATH_TO_LOG_FILE_TRAIN,
+    'PATH_TO_LOG': PATH_TO_LOG,
+    'path_to_init_weights': None,
+    'layer_to_init_with_weights': ['layer1, layer2, layer3'],
     'num_actions': 2,
     'time_to_execute_action': 0.1,
     'buffer_size': 4,
@@ -32,7 +31,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epoch_to_train': 1,
+    'epochs_to_train': 40,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,

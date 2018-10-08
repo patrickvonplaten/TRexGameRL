@@ -15,13 +15,11 @@ PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 
 class Agent(object):
     def __init__(self, model, mode, config):
-        self.PATH_TO_WEIGHTS = config['PATH_TO_WEIGHTS']
-        self.PATH_TO_LOG_FILE_TRAIN = config['PATH_TO_LOG_FILE_TRAIN']
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
         self.game = TRexGame(display=config['display'], wait_after_restart=config['wait_after_restart'])
         self.time_to_execute_action = config['time_to_execute_action']
         self.memory = Memory(config['memory_size'])
-        self.epoch_to_train = config['epoch_to_train']
+        self.epochs_to_train = config['epochs_to_train']
         self.decay_fn = getattr(tRexUtils, config['decay_fn'])
         self.warmup_steps = config['warmup_steps']
         self.epsilon_final = config['epsilon_final']
@@ -31,19 +29,20 @@ class Agent(object):
         self.batch_size = config['batch_size']
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
+        self.path_to_init_weights = config['path_to_init_weights']
         self.mode = mode
         self.model = model
         self.preprocessor = Prepocessor(vertical_crop_intervall=config['vertical_crop_intervall'],
                 horizontal_crop_intervall=config['horizontal_crop_intervall'], buffer_size=config['buffer_size'], resize=config['resize_dim'])
-        self.logger = Logger(self.PATH_TO_LOG_FILE_TRAIN)
+        self.logger = Logger(config['PATH_TO_LOG'])
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
         self.control_environments = np.zeros((self.num_control_environments, ) + self.preprocessor.environment_processed_shape)
+        self.epoch_intervall_to_save_weights = self.set_epoch_intervall_to_save_weights(self.epochs_to_train)
         self.execute()
 
     def execute(self):
         if(self.mode == 'play'):
-            self.model.load_weights(self.PATH_TO_WEIGHTS)
             self.play()
         if(self.mode == 'train'):
             self.train()
@@ -52,6 +51,7 @@ class Agent(object):
         return self.game.process_action_to_state(action_code, self.time_to_execute_action)
 
     def play(self):
+        self.model.load_weights()
         state = self.game.process_to_first_state()
         while not state.is_crashed():
             image = state.get_image()
@@ -68,13 +68,13 @@ class Agent(object):
         self.collect_control_environment_set(self.num_control_environments)
         start_time = time.time()
 
-        for i in range(self.epoch_to_train):
+        for epoch in range(self.epochs_to_train):
             first_state = self.game.process_to_first_state()
             self.training_data.append(first_state)
             environment_prev = self.preprocessor.process(first_state.get_image())
             crashed = False
             reward_sum = 0
-            epsilon = self.get_epsilon(i)
+            epsilon = self.get_epsilon(epoch)
 
             while not crashed:
                 action = self.get_action(epsilon, environment_prev)
@@ -90,13 +90,12 @@ class Agent(object):
                 environment_prev = environment_next
                 reward_sum += reward
 
-            loss = self.replay(i)
+            loss = self.replay(epoch)
             avg_control_q = self.get_sum_of_q_values_over_control_envs()
-            self.logger.log_parameter(epoch=i+1, start_time=start_time, score=self.game.get_score(),
-                    loss=loss, epsilon=epsilon, epoch_to_train=self.epoch_to_train,
+            self.logger.log_parameter(epoch=epoch, start_time=start_time, score=self.game.get_score(),
+                    loss=loss, epsilon=epsilon, epochs_to_train=self.epochs_to_train,
                     reward_sum=reward_sum, avg_control_q=avg_control_q)
-
-        self.model.save_weights(self.PATH_TO_WEIGHTS)
+            self.save_weights(epoch)
         self.logger.close()
 
     def get_action(self, epsilon, environment_prev):
@@ -129,6 +128,15 @@ class Agent(object):
             return self.game.process_to_first_state()
         random_action = self.get_action(1, None)
         return self.process_action_to_state(random_action)
+
+    def save_weights(self, epoch):
+        if epoch % self.epoch_intervall_to_save_weights is 0:
+            self.model.save_weights(epoch)
+
+    def set_epoch_intervall_to_save_weights(self, epochs_to_train, max_num_model_checkpoints=20):
+        num_model_checkpoints = min(epochs_to_train, max_num_model_checkpoints)
+        epoch_intervall_to_save_weights = int(epochs_to_train / num_model_checkpoints)
+        return epoch_intervall_to_save_weights
 
     def end(self):
         return self.game.end()
