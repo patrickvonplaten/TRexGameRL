@@ -23,7 +23,7 @@ config = {
     'PATH_TO_WEIGHTS': PATH_TO_WEIGHTS,
     'PATH_TO_LOG': PATH_TO_LOG,
     'path_to_init_weights': None,
-    'layer_to_init_with_weights': ['layer1, layer2, layer3'],
+    'layer_to_init_with_weights': ['layer1, layer2, layer3'], # not set up yet
     'num_actions': 2,
     'time_to_execute_action': 0.1,
     'buffer_size': 4,
@@ -31,22 +31,22 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epochs_to_train': 40,
+    'epochs_to_train': 5000,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
     'resize_dim': 80,
     'buffer_size': 4,
-    'warmup_steps': 20,
-    'epsilon_final': 0.05,
+    'warmup_steps': 100,
+    'epsilon_final': 0.01,
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 1500,
     'wait_after_restart': 1.5,
-    'num_control_environments': 2,
+    'num_control_environments': 400,
     'copy_train_to_target_every_epoch': 1,
 }
 
-optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.0)
+optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0)
 conv_initialization = 'glorot_normal'
 dense_initialization = 'glorot_normal'
 
