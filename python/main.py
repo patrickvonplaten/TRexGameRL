@@ -46,18 +46,20 @@ config = {
     'copy_train_to_target_every_epoch': 1,
 }
 
-optimizer = RMSprop(lr=1e-3, rho=0.9, epsilon=None, decay=0.0)
+optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.0)
+conv_initialization = 'glorot_normal'
+dense_initialization = 'glorot_normal'
 
 input_shape = Input(shape=(80, 80, 4))
-conv1 = Conv2D(filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer='random_uniform')(input_shape)
-conv2 = Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), padding='valid', activation=relu, kernel_initializer='random_uniform')(conv1)
-conv3 = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=relu, kernel_initializer='random_uniform')(conv2)
+conv1 = Conv2D(filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer=conv_initialization)(input_shape)
+conv2 = Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv1)
+conv3 = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv2)
 flatten = Flatten()(conv3)
 
 
 def create_standard_dqn():
-    dense = Dense(512, activation=relu, kernel_initializer='random_uniform')(flatten)
-    out = Dense(config['num_actions'], kernel_initializer='random_uniform')(dense)
+    dense = Dense(512, activation=relu, kernel_initializer=dense_initialization)(flatten)
+    out = Dense(config['num_actions'], kernel_initializer=dense_initialization)(dense)
     return out
 
 
@@ -67,11 +69,11 @@ def average_tensor(x):
 
 
 def create_duel_dqn():
-    dense_value = Dense(512, activation=relu, kernel_initializer='random_uniform')(flatten)
-    out_value = Dense(1, kernel_initializer='random_uniform')(dense_value)
+    dense_value = Dense(512, activation=relu, kernel_initializer=dense_initialization)(flatten)
+    out_value = Dense(1, kernel_initializer=dense_initialization)(dense_value)
 
-    dense_advantage = Dense(512, activation=relu, kernel_initializer='random_uniform')(flatten)
-    out_std_advantage = Dense(config['num_actions'], kernel_initializer='random_uniform')(dense_advantage)
+    dense_advantage = Dense(512, activation=relu, kernel_initializer=dense_initialization)(flatten)
+    out_std_advantage = Dense(config['num_actions'], kernel_initializer=dense_initialization)(dense_advantage)
     out_avg_advantage = Lambda(average_tensor)(out_std_advantage)
     out_advantage = Subtract()([out_std_advantage, out_avg_advantage])
     out = Add()([out_value, out_advantage])
