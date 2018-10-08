@@ -21,4 +21,5 @@ __pycache__/
 chromedriver
 python/experiments/*
 python/train_log.txt
+python/weights/*
 python/log/*

@@ -14,5 +14,5 @@ if [ ${nameOfExperiment} = "all" ]
 fi
 
 curPath=$(pwd)
-experimentToDelete=${curPath}/experiments/${nameOfExperiment}
+experimentToDelete=${curPath}/experiments/${nameOfExperiment}*
 rm -r ${experimentToDelete}
