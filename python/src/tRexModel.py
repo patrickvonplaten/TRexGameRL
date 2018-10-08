@@ -1,10 +1,15 @@
 import numpy as np
 import ipdb
+import os
+import glob
 from tensorflow.python.keras.models import clone_model
+from tensorflow.python.keras.callbacks import TensorBoard
 
 
 class TFRexModel(object):
     def __init__(self, config, network, optimizer):
+        self.PATH_TO_WEIGHTS = config['PATH_TO_WEIGHTS']
+        self.PATH_TO_LOG = config['PATH_TO_LOG']
         self.weights = None
         self.time_to_execute_action = config['time_to_execute_action']
         self.num_actions = config['num_actions']
@@ -12,9 +17,12 @@ class TFRexModel(object):
         self.batch_size = config['batch_size']
         self.metrics = config['metrics']
         self.loss = config['loss']
+        self.file_name_template = 'network.epoch.{:07}.h5'
         self.train_model = network
         self.target_model = clone_model(self.train_model)
         self.optimizer = optimizer
+        self.tensor_board = TensorBoard(log_dir=self.PATH_TO_LOG, histogram_freq=0, write_graph=True, write_images=True)
+        self.tensor_board.set_model(self.train_model)
         self.compile_train_model()
 
     def get_action(self, environment):
@@ -25,12 +33,21 @@ class TFRexModel(object):
     def get_time_to_execute_action(self):
         return self.time_to_execute_action
 
-    def save_weights(self, path_to_save_weights):
-        self.train_model.save_weights(path_to_save_weights)
-        print('Saved weights to {}'.format(path_to_save_weights))
+    def save_weights(self, epoch):
+        weight_file_path = self.get_file_path(epoch, self.PATH_TO_WEIGHTS)
+        self.train_model.save_weights(weight_file_path)
+        print('Saved weights to {}'.format(weight_file_path))
 
-    def load_weights(self, path_to_load_weights):
-        self.train_model.load_weights(path_to_load_weights)
+    def load_weights(self, epoch=None, path_to_weights=None):
+        path_to_weights = self.PATH_TO_WEIGHTS if path_to_weights is None else path_to_weights
+        path_to_weights_file = self.get_last_file_path(path_to_weights) if epoch is None else self.get_file_path(epoch, self.path_to_weights)
+        self.train_model.load_weights(path_to_weights_file)
+
+    def get_file_path(self, epoch, path_to_weights):
+        return os.path.join(path_to_weights, self.file_name_template.format(int(epoch)))
+
+    def get_last_file_path(self, path_to_weights):
+        return os.path.join(path_to_weights, max(glob.glob(path_to_weights)))
 
     def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
         q_values = self.predict_on_batch(environment_prevs, self.train_model)
@@ -60,6 +77,3 @@ class TFRexModel(object):
     def split_batch_into_parts(self, batch):
         num_parts = batch.shape[1]
         return (np.stack(batch[:, i]) for i in range(num_parts))
-
-    def save_trained_weights(self):
-        pass

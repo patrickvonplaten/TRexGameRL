@@ -3,19 +3,16 @@ import sys
 import os
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_TREX_MODULES = CUR_PATH + '/src'
-sys.path.insert(0,PATH_TO_TREX_MODULES)
+sys.path.insert(0, PATH_TO_TREX_MODULES)
 
-PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
-PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
-
-PATH_TO_WEIGHTS = os.path.join(CUR_PATH, 'model.h5')
-PATH_TO_LOG_FILE_TRAIN = os.path.join(CUR_PATH, 'train_log.txt')
+PATH_TO_WEIGHTS = os.path.join(CUR_PATH, './weights')
+PATH_TO_LOG = os.path.join(CUR_PATH, './log')
 
 from tRexModel import TFRexModel
 from tensorflow.python.keras.activations import relu
-from tensorflow.python.keras.layers import Conv2D, Flatten, Dense
-from tensorflow.python.keras.models import Sequential
-from tensorflow.python.keras.optimizers import SGD, RMSprop
+from tensorflow.python.keras.layers import Conv2D, Flatten, Dense, Input, Add, Subtract, Lambda
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.optimizers import RMSprop
 from argparse import ArgumentParser
 from tRexAgent import Agent
 import ipdb
@@ -24,7 +21,9 @@ mode = 'train'
 
 config = {
     'PATH_TO_WEIGHTS': PATH_TO_WEIGHTS,
-    'PATH_TO_LOG_FILE_TRAIN': PATH_TO_LOG_FILE_TRAIN,
+    'PATH_TO_LOG': PATH_TO_LOG,
+    'path_to_init_weights': None,
+    'layer_to_init_with_weights': ['layer1, layer2, layer3'],
     'num_actions': 2,
     'time_to_execute_action': 0.1,
     'buffer_size': 4,
@@ -32,7 +31,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epoch_to_train': 5000,
+    'epochs_to_train': 40,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
@@ -47,16 +46,41 @@ config = {
     'copy_train_to_target_every_epoch': 1,
 }
 
-optimizer = RMSprop(lr=1e-3, rho=0.9, epsilon=None, decay=0.0)
+optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.0)
+conv_initialization = 'glorot_normal'
+dense_initialization = 'glorot_normal'
 
-network = Sequential([
-    Conv2D(input_shape=(80, 80, 4), filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer='random_uniform'),
-    Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), padding='valid', activation=relu, kernel_initializer='random_uniform'),
-    Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=relu, kernel_initializer='random_uniform'),
-    Flatten(),
-    Dense(512, activation=relu, kernel_initializer='random_uniform'),
-    Dense(config['num_actions'], kernel_initializer='random_uniform'),
-])
+input_shape = Input(shape=(80, 80, 4))
+conv1 = Conv2D(filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer=conv_initialization)(input_shape)
+conv2 = Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv1)
+conv3 = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv2)
+flatten = Flatten()(conv3)
+
+
+def create_standard_dqn():
+    dense = Dense(512, activation=relu, kernel_initializer=dense_initialization)(flatten)
+    out = Dense(config['num_actions'], kernel_initializer=dense_initialization)(dense)
+    return out
+
+
+def average_tensor(x):
+    from tensorflow.python.keras.backend import mean
+    return mean(x, axis=1)
+
+
+def create_duel_dqn():
+    dense_value = Dense(512, activation=relu, kernel_initializer=dense_initialization)(flatten)
+    out_value = Dense(1, kernel_initializer=dense_initialization)(dense_value)
+
+    dense_advantage = Dense(512, activation=relu, kernel_initializer=dense_initialization)(flatten)
+    out_std_advantage = Dense(config['num_actions'], kernel_initializer=dense_initialization)(dense_advantage)
+    out_avg_advantage = Lambda(average_tensor)(out_std_advantage)
+    out_advantage = Subtract()([out_std_advantage, out_avg_advantage])
+    out = Add()([out_value, out_advantage])
+    return out
+
+
+network = Model(inputs=input_shape, outputs=create_duel_dqn())
 
 if __name__ == "__main__":
     parser = ArgumentParser()
