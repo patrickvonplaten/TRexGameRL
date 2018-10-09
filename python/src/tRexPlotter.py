@@ -13,6 +13,7 @@ class Plotter(object):
         self.title = title
         self.content = self.read_in_file()
         self.parameter_dict = self.set_up_parameter_dict(self.parameters_to_plot)
+        self.running_avg = 200
 
     def read_in_file(self):
         with open(self.train_log_file) as log_file:
@@ -53,11 +54,29 @@ class Plotter(object):
         values_array = np.asarray(parameter_values)
         epochs_array = np.arange(values_array.size)
 
+        running_avg_array, epochs_avg_array = self.calculate_running_avg_array(values_array, epochs_array)
+        running_standard_dev_array = self.calculate_running_std_dev(values_array)
+
         fig, ax = plt.subplots()
-        ax.plot(epochs_array, values_array)
+        ax.plot(epochs_array, values_array, color='black')
+        ax.plot(epochs_avg_array, running_avg_array, color='red')
+        ax.plot(epochs_avg_array, running_avg_array + running_standard_dev_array, color='orange')
+        ax.plot(epochs_avg_array, running_avg_array - running_standard_dev_array, color='orange')
         ax.set(xlabel='epochs', ylabel=parameter_name, title=self.title)
         ax.grid()
         fig.savefig(os.path.join(self.folder_to_save_plots, parameter_name + '_plot_' + self.title + '.png'))
+
+    def calculate_running_avg_array(self, values_array, epochs_array):
+        running_avg_array = np.convolve(values_array, np.ones((self.running_avg,))/self.running_avg, mode='valid')
+        epochs_avg_array = epochs_array[:-self.running_avg + 1]
+        return running_avg_array, epochs_avg_array
+
+    def calculate_running_std_dev(self, values_array):
+        running_standard_dev_size = values_array.size - self.running_avg + 1
+        running_standard_dev_array = np.zeros(running_standard_dev_size)
+        for mean_idx in range(running_standard_dev_size):
+            running_standard_dev_array[mean_idx] = np.std(values_array[mean_idx: mean_idx + self.running_avg])
+        return running_standard_dev_array
 
 
 if __name__ == "__main__":
