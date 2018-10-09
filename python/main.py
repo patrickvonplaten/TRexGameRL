@@ -13,6 +13,7 @@ from tensorflow.python.keras.activations import relu
 from tensorflow.python.keras.layers import Conv2D, Flatten, Dense, Input, Add, Subtract, Lambda
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.optimizers import RMSprop
+from tRexLogger import Logger
 from argparse import ArgumentParser
 from tRexAgent import Agent
 import ipdb
@@ -43,7 +44,7 @@ config = {
     'decay_period': 1500,
     'wait_after_restart': 1.5,
     'num_control_environments': 2,
-    'copy_train_to_target_every_epoch': 1,
+    'copy_train_to_target_every_epoch': 1
 }
 
 optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.1)
@@ -89,5 +90,6 @@ if __name__ == "__main__":
     config['display'] = args.display
 
     model = TFRexModel(network=network, optimizer=optimizer, config=config)
-    agent = Agent(model=model, mode=mode, config=config)
+    logger = Logger(config)
+    agent = Agent(model=model, logger=logger, mode=mode, config=config)
     agent.end()
