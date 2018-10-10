@@ -29,6 +29,7 @@ class Agent(object):
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
         self.path_to_init_weights = config['path_to_init_weights']
+        self.restore_from = config['restore_from']
         self.mode = mode
         self.model = model
         self.preprocessor = Prepocessor(vertical_crop_intervall=config['vertical_crop_intervall'],
@@ -65,8 +66,14 @@ class Agent(object):
         self.training_data = []
         self.collect_control_environment_set(self.num_control_environments)
         start_time = time.time()
+        start_epoch = 0
+        if not self.restore_from is None:
+            model_path, start_epoch = self.logger.get_model_path(self.restore_from)
+            # start training from next epoch
+            start_epoch += 1
+            self.model.restore_from(model_path)
 
-        for epoch in range(self.epochs_to_train):
+        for epoch in range(start_epoch, self.epochs_to_train):
             first_state = self.game.process_to_first_state()
             self.training_data.append(first_state)
             environment_prev = self.preprocessor.process(first_state.get_image())
@@ -93,7 +100,7 @@ class Agent(object):
             self.logger.log_parameter(epoch=epoch, start_time=start_time, score=self.game.get_score(),
                     loss=loss, epsilon=epsilon, epochs_to_train=self.epochs_to_train,
                     reward_sum=reward_sum, avg_control_q=avg_control_q)
-            self.logger.save_weights(epoch, self.model.train_model)
+            self.logger.save_model(epoch, self.model.train_model)
         self.logger.close()
 
     def get_action(self, epsilon, environment_prev):

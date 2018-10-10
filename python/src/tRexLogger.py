@@ -2,8 +2,27 @@ import time
 import datetime
 import ipdb
 import os
-import glob
+import re
 
+def get_last_file_number(base_name, path):
+    """Gets the number of the last file
+    Returns -1 if no file matching the base_name was found in path.
+    """
+
+    reg_exp = re.sub("{.*}", "([0-9]+)", base_name)
+    # TODO glob?
+    files = os.listdir(path)
+    reg_exp = re.compile(reg_exp)
+    max_value = -1
+    for file in files:
+        match = re.match(reg_exp, file)
+        if match is None:
+            continue
+        value = int(match.group(1))
+        if value > max_value:
+            max_value = value
+
+    return max_value
 
 class Logger(object):
 
@@ -12,15 +31,15 @@ class Logger(object):
         if not os.path.isdir(self.path_to_log):
             os.mkdir(self.path_to_log)
         self.path_to_file = os.path.join(self.path_to_log, 'train_log.txt')
-        self.path_to_weights = config['PATH_TO_WEIGHTS']
-        if not os.path.isdir(self.path_to_weights):
-            os.mkdir(self.path_to_weights)
+        self.path_to_models = config['PATH_TO_MODELS']
+        if not os.path.isdir(self.path_to_models):
+            os.mkdir(self.path_to_models)
 
-        self.save_weights_every_epoch = config['save_weights_every_epoch']
-        self.keep_weights = config['keep_weights']
+        self.save_model_every_epoch = config['save_model_every_epoch']
+        self.keep_models = config['keep_models']
         self.file = None
         self.file_name_template = 'network.epoch.{:07}.h5'
-        self.saved_weights = []
+        self.saved_models = []
 
     def create_log(self, parameters):
         log = ''
@@ -68,27 +87,41 @@ class Logger(object):
     def close(self):
         self.file.close()
 
-    def save_weights(self, epoch, model):
+    def save_model(self, epoch, model):
         """
         Keeps the last 20 models of CURRENT run, older are deleted.
         Args:
-            model (keras model): The model whose weights are saved.
+            model (keras model): The model which is saved.
         """
-        if epoch % self.save_weights_every_epoch is 0:
-            weight_file_path = self.get_file_path(epoch, self.path_to_weights)
-            model.save_weights(weight_file_path)
-            print('Saved weights to {}'.format(weight_file_path))
-            self.saved_weights = [weight_file_path] + self.saved_weights
-            if len(self.saved_weights) > self.keep_weights:
-                oldest = self.saved_weights.pop()
+        if epoch % self.save_model_every_epoch is 0:
+            model_file_path = self.get_file_path(epoch)
+            model.save(model_file_path)
+            print('Saved model to {}'.format(model_file_path))
+            self.saved_models = [model_file_path] + self.saved_models
+            if len(self.saved_models) > self.keep_models:
+                oldest = self.saved_models.pop()
                 os.remove(oldest)
                 print('Deleted {}'.format(oldest))
 
-    def get_last_file_path(self, path_to_weights):
-        return os.path.join(path_to_weights, max(glob.glob(path_to_weights)))
+    def get_file_path(self, epoch):
+        return os.path.join(self.path_to_models, self.file_name_template.format(int(epoch)))
 
-    def get_file_path(self, epoch, path_to_weights):
-        return os.path.join(path_to_weights, self.file_name_template.format(int(epoch)))
+    def get_model_path(self, epoch):
+        """
+        Returns the path of the model for a given epoch.
+
+        If epoch is negative, the last found model is returned.
+
+        Returns:
+            The path to the model.
+            The epoch.
+        """
+
+        if epoch < 0:
+            epoch = get_last_file_number(self.file_name_template, self.path_to_models)
+        
+        return self.get_file_path(epoch), epoch
+
 
     def log_parameter(self, epoch, epochs_to_train, start_time, score, loss, epsilon, reward_sum, avg_control_q):
         log = self.create_log({
