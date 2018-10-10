@@ -8,8 +8,6 @@ from tensorflow.python.keras.callbacks import TensorBoard
 
 class TFRexModel(object):
     def __init__(self, config, network, optimizer):
-        self.PATH_TO_WEIGHTS = config['PATH_TO_WEIGHTS']
-        self.PATH_TO_LOG = config['PATH_TO_LOG']
         self.weights = None
         self.time_to_execute_action = config['time_to_execute_action']
         self.num_actions = config['num_actions']
@@ -17,11 +15,10 @@ class TFRexModel(object):
         self.batch_size = config['batch_size']
         self.metrics = config['metrics']
         self.loss = config['loss']
-        self.file_name_template = 'network.epoch.{:07}.h5'
         self.train_model = network
         self.target_model = clone_model(self.train_model)
         self.optimizer = optimizer
-        self.tensor_board = TensorBoard(log_dir=self.PATH_TO_LOG, histogram_freq=0, write_graph=True, write_images=True)
+        self.tensor_board = TensorBoard(log_dir=config['PATH_TO_LOG'], histogram_freq=0, write_graph=True, write_images=True)
         self.tensor_board.set_model(self.train_model)
         self.compile_train_model()
 
@@ -33,10 +30,6 @@ class TFRexModel(object):
     def get_time_to_execute_action(self):
         return self.time_to_execute_action
 
-    def save_weights(self, epoch):
-        weight_file_path = self.get_file_path(epoch, self.PATH_TO_WEIGHTS)
-        self.train_model.save_weights(weight_file_path)
-        print('Saved weights to {}'.format(weight_file_path))
 
     def load_weights(self, epoch=None, path_to_weights=None):
         path_to_weights = self.PATH_TO_WEIGHTS if path_to_weights is None else path_to_weights

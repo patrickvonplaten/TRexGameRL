@@ -44,7 +44,9 @@ config = {
     'decay_period': 1500,
     'wait_after_restart': 1.5,
     'num_control_environments': 2,
-    'copy_train_to_target_every_epoch': 1
+    'copy_train_to_target_every_epoch': 1,
+    'keep_weights': 5,
+    'save_weights_every_epoch': 1
 }
 
 optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.1)

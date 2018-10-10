@@ -2,14 +2,25 @@ import time
 import datetime
 import ipdb
 import os
+import glob
 
 
 class Logger(object):
 
-    def __init__(self, path_to_log):
-        self.path_to_log = path_to_log
+    def __init__(self, config):
+        self.path_to_log = config['PATH_TO_LOG']
+        if not os.path.isdir(self.path_to_log):
+            os.mkdir(self.path_to_log)
         self.path_to_file = os.path.join(self.path_to_log, 'train_log.txt')
+        self.path_to_weights = config['PATH_TO_WEIGHTS']
+        if not os.path.isdir(self.path_to_weights):
+            os.mkdir(self.path_to_weights)
+
+        self.save_weights_every_epoch = config['save_weights_every_epoch']
+        self.keep_weights = config['keep_weights']
         self.file = None
+        self.file_name_template = 'network.epoch.{:07}.h5'
+        self.saved_weights = []
 
     def create_log(self, parameters):
         log = ''
@@ -56,6 +67,28 @@ class Logger(object):
 
     def close(self):
         self.file.close()
+
+    def save_weights(self, epoch, model):
+        """
+        Keeps the last 20 models of CURRENT run, older are deleted.
+        Args:
+            model (keras model): The model whose weights are saved.
+        """
+        if epoch % self.save_weights_every_epoch is 0:
+            weight_file_path = self.get_file_path(epoch, self.path_to_weights)
+            model.save_weights(weight_file_path)
+            print('Saved weights to {}'.format(weight_file_path))
+            self.saved_weights = [weight_file_path] + self.saved_weights
+            if len(self.saved_weights) > self.keep_weights:
+                oldest = self.saved_weights.pop()
+                os.remove(oldest)
+                print('Deleted {}'.format(oldest))
+
+    def get_last_file_path(self, path_to_weights):
+        return os.path.join(path_to_weights, max(glob.glob(path_to_weights)))
+
+    def get_file_path(self, epoch, path_to_weights):
+        return os.path.join(path_to_weights, self.file_name_template.format(int(epoch)))
 
     def log_parameter(self, epoch, epochs_to_train, start_time, score, loss, epsilon, reward_sum, avg_control_q):
         log = self.create_log({
