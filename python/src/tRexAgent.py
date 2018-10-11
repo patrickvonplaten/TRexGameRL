@@ -5,7 +5,6 @@ from imageio import imwrite
 from tRexGame import TRexGame
 from tRexMemory import Memory
 from tRexPreprocessor import Prepocessor
-from tRexLogger import Logger
 import tRexUtils
 import ipdb
 
@@ -14,7 +13,7 @@ PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 
 
 class Agent(object):
-    def __init__(self, model, mode, config):
+    def __init__(self, model, logger, mode, config):
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
         self.game = TRexGame(display=config['display'], wait_after_restart=config['wait_after_restart'])
         self.time_to_execute_action = config['time_to_execute_action']
@@ -30,15 +29,15 @@ class Agent(object):
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
         self.path_to_init_weights = config['path_to_init_weights']
+        self.restore_from = config['restore_from']
         self.mode = mode
         self.model = model
         self.preprocessor = Prepocessor(vertical_crop_intervall=config['vertical_crop_intervall'],
                 horizontal_crop_intervall=config['horizontal_crop_intervall'], buffer_size=config['buffer_size'], resize=config['resize_dim'])
-        self.logger = Logger(config['PATH_TO_LOG'])
+        self.logger = logger
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
         self.control_environments = np.zeros((self.num_control_environments, ) + self.preprocessor.environment_processed_shape)
-        self.epoch_intervall_to_save_weights = self.set_epoch_intervall_to_save_weights(self.epochs_to_train)
         self.execute()
 
     def execute(self):
@@ -67,8 +66,14 @@ class Agent(object):
         self.training_data = []
         self.collect_control_environment_set(self.num_control_environments)
         start_time = time.time()
+        start_epoch = 0
+        if not self.restore_from is None:
+            model_path, start_epoch = self.logger.get_model_path(self.restore_from)
+            # start training from next epoch
+            start_epoch += 1
+            self.model.restore_from(model_path)
 
-        for epoch in range(self.epochs_to_train):
+        for epoch in range(start_epoch, self.epochs_to_train):
             first_state = self.game.process_to_first_state()
             self.training_data.append(first_state)
             environment_prev = self.preprocessor.process(first_state.get_image())
@@ -95,7 +100,7 @@ class Agent(object):
             self.logger.log_parameter(epoch=epoch, start_time=start_time, score=self.game.get_score(),
                     loss=loss, epsilon=epsilon, epochs_to_train=self.epochs_to_train,
                     reward_sum=reward_sum, avg_control_q=avg_control_q)
-            self.save_weights(epoch)
+            self.logger.save_model(epoch, self.model.train_model)
         self.logger.close()
 
     def get_action(self, epsilon, environment_prev):
@@ -128,15 +133,6 @@ class Agent(object):
             return self.game.process_to_first_state()
         random_action = self.get_action(1, None)
         return self.process_action_to_state(random_action)
-
-    def save_weights(self, epoch):
-        if epoch % self.epoch_intervall_to_save_weights is 0:
-            self.model.save_weights(epoch)
-
-    def set_epoch_intervall_to_save_weights(self, epochs_to_train, max_num_model_checkpoints=20):
-        num_model_checkpoints = min(epochs_to_train, max_num_model_checkpoints)
-        epoch_intervall_to_save_weights = int(epochs_to_train / num_model_checkpoints)
-        return epoch_intervall_to_save_weights
 
     def end(self):
         return self.game.end()
