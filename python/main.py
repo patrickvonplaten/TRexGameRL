@@ -47,7 +47,7 @@ config = {
     'copy_train_to_target_every_epoch': 1,
     'keep_models': 5,
     'save_model_every_epoch': 1,
-    'restore_from': None
+    'restore_from_epoch': -1
 }
 
 optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.1)

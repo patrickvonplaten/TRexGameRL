@@ -1,6 +1,5 @@
 import numpy as np
 import ipdb
-import os
 from tensorflow.python.keras.models import clone_model, load_model
 from tensorflow.python.keras.callbacks import TensorBoard
 
@@ -29,7 +28,7 @@ class TFRexModel(object):
     def get_time_to_execute_action(self):
         return self.time_to_execute_action
 
-    def restore_from(self, path_to_model):
+    def restore_from_path(self, path_to_model):
         print("Restoring from {}".format(path_to_model))
         self.train_model = load_model(path_to_model)
         self.target_model = load_model(path_to_model)

@@ -2,27 +2,8 @@ import time
 import datetime
 import ipdb
 import os
-import re
+import glob
 
-def get_last_file_number(base_name, path):
-    """Gets the number of the last file
-    Returns -1 if no file matching the base_name was found in path.
-    """
-
-    reg_exp = re.sub("{.*}", "([0-9]+)", base_name)
-    # TODO glob?
-    files = os.listdir(path)
-    reg_exp = re.compile(reg_exp)
-    max_value = -1
-    for file in files:
-        match = re.match(reg_exp, file)
-        if match is None:
-            continue
-        value = int(match.group(1))
-        if value > max_value:
-            max_value = value
-
-    return max_value
 
 class Logger(object):
 
@@ -34,12 +15,11 @@ class Logger(object):
         self.path_to_models = config['PATH_TO_MODELS']
         if not os.path.isdir(self.path_to_models):
             os.mkdir(self.path_to_models)
-
         self.save_model_every_epoch = config['save_model_every_epoch']
         self.keep_models = config['keep_models']
         self.file = None
-        self.file_name_template = 'network.epoch.{:07}.h5'
         self.saved_models = []
+        self.file_name_template = 'network.epoch.{:07}.h5'
 
     def create_log(self, parameters):
         log = ''
@@ -88,11 +68,6 @@ class Logger(object):
         self.file.close()
 
     def save_model(self, epoch, model):
-        """
-        Keeps the last 20 models of CURRENT run, older are deleted.
-        Args:
-            model (keras model): The model which is saved.
-        """
         if epoch % self.save_model_every_epoch is 0:
             model_file_path = self.get_file_path(epoch)
             model.save(model_file_path)
@@ -106,22 +81,17 @@ class Logger(object):
     def get_file_path(self, epoch):
         return os.path.join(self.path_to_models, self.file_name_template.format(int(epoch)))
 
-    def get_model_path(self, epoch):
-        """
-        Returns the path of the model for a given epoch.
+    def get_epoch_of_last_saved_model(self):
+        list_of_model_files = self.get_list_of_model_files()
+        latest_model_path = max(list_of_model_files, key=os.path.getctime)
+        return self.extract_epoch_from_model_path(latest_model_path)
 
-        If epoch is negative, the last found model is returned.
+    def get_list_of_model_files(self):
+        return glob.glob(self.path_to_models + '/*')
 
-        Returns:
-            The path to the model.
-            The epoch.
-        """
-
-        if epoch < 0:
-            epoch = get_last_file_number(self.file_name_template, self.path_to_models)
-        
-        return self.get_file_path(epoch), epoch
-
+    def extract_epoch_from_model_path(self, model_path):
+        model_name = model_path.split('/')[-1]
+        return int(model_name.split('.')[-2])
 
     def log_parameter(self, epoch, epochs_to_train, start_time, score, loss, epsilon, reward_sum, avg_control_q):
         log = self.create_log({
