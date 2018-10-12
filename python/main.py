@@ -32,7 +32,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epochs_to_train': 5000,
+    'epochs_to_train': 20000,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
@@ -46,8 +46,8 @@ config = {
     'num_control_environments': 400,
     'copy_train_to_target_every_epoch': 1,
     'keep_models': 5,
-    'save_model_every_epoch': 1,
-    'restore_from_epoch': -1
+    'save_model_every_epoch': 10,
+    'restore_from_epoch': None
 }
 
 optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0)
@@ -91,7 +91,6 @@ if __name__ == "__main__":
     parser.add_argument('--display', default=False, action='store_true')
     args = parser.parse_args()
     config['display'] = args.display
-
     model = TFRexModel(network=network, optimizer=optimizer, config=config)
     logger = Logger(config)
     agent = Agent(model=model, logger=logger, mode=mode, config=config)

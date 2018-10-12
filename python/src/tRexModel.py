@@ -5,7 +5,7 @@ from tensorflow.python.keras.callbacks import TensorBoard
 
 
 class TFRexModel(object):
-    def __init__(self, config, network, optimizer):
+    def __init__(self, config, network, optimizer, restore=False):
         self.weights = None
         self.time_to_execute_action = config['time_to_execute_action']
         self.num_actions = config['num_actions']

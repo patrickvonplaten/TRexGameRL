@@ -82,6 +82,7 @@ class Logger(object):
         return os.path.join(self.path_to_models, self.file_name_template.format(int(epoch)))
 
     def get_epoch_of_last_saved_model(self):
+        ipdb.set_trace()
         list_of_model_files = self.get_list_of_model_files()
         latest_model_path = max(list_of_model_files, key=os.path.getctime)
         return self.extract_epoch_from_model_path(latest_model_path)

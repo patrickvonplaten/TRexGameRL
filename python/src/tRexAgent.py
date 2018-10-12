@@ -71,7 +71,6 @@ class Agent(object):
         if self.restore_from_epoch is not None:
             if self.restore_from_epoch < 0:
                 self.restore_from_epoch = self.logger.get_epoch_of_last_saved_model()
-            ipdb.set_trace()
             model_path = self.logger.get_file_path(self.restore_from_epoch)
             self.model.restore_from_path(model_path)
             start_epoch = self.restore_from_epoch + 1
