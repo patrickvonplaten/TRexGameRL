@@ -5,12 +5,8 @@ from tensorflow.python.keras.callbacks import TensorBoard
 
 
 class TFRexModel(object):
-<<<<<<< HEAD
-    def __init__(self, config, network, optimizer, restore=False):
-=======
     def __init__(self, config, network, start_epoch=0):
         self.start_epoch = start_epoch
->>>>>>> 157159a7c20a731b1451a672d031ac24d13c0812
         self.weights = None
         self.time_to_execute_action = config['time_to_execute_action']
         self.num_actions = config['num_actions']

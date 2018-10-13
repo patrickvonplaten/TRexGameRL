@@ -65,18 +65,7 @@ class Agent(object):
         self.collect_control_environment_set(self.num_control_environments)
         start_time = time.time()
 
-<<<<<<< HEAD
-        if self.restore_from_epoch is not None:
-            if self.restore_from_epoch < 0:
-                self.restore_from_epoch = self.logger.get_epoch_of_last_saved_model()
-            model_path = self.logger.get_file_path(self.restore_from_epoch)
-            self.model.restore_from_path(model_path)
-            start_epoch = self.restore_from_epoch + 1
-
-        for epoch in range(start_epoch, self.epochs_to_train):
-=======
         for epoch in range(self.model.start_epoch, self.epochs_to_train):
->>>>>>> 157159a7c20a731b1451a672d031ac24d13c0812
             first_state = self.game.process_to_first_state()
 #            self.training_data.append(first_state) TODO: only needed when saving screenshots -> should be disabled in generel
             environment_prev = self.preprocessor.process(first_state.get_image())
