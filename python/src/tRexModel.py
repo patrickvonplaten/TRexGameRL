@@ -5,7 +5,8 @@ from tensorflow.python.keras.callbacks import TensorBoard
 
 
 class TFRexModel(object):
-    def __init__(self, config, network, optimizer):
+    def __init__(self, config, network, start_epoch=0):
+        self.start_epoch = start_epoch
         self.weights = None
         self.time_to_execute_action = config['time_to_execute_action']
         self.num_actions = config['num_actions']
@@ -13,12 +14,20 @@ class TFRexModel(object):
         self.batch_size = config['batch_size']
         self.metrics = config['metrics']
         self.loss = config['loss']
+        self.optimizer = config['optimizer']
         self.train_model = network
         self.target_model = clone_model(self.train_model)
-        self.optimizer = optimizer
+        self.compile_train_model()
         self.tensor_board = TensorBoard(log_dir=config['PATH_TO_LOG'], histogram_freq=0, write_graph=True, write_images=True)
         self.tensor_board.set_model(self.train_model)
-        self.compile_train_model()
+
+    @classmethod
+    def restore_from_epoch(cls, epoch, config, logger):
+        if epoch < 0:
+            epoch = logger.get_epoch_of_last_saved_model()
+        path_to_model = logger.get_file_path(epoch)
+        print("Restoring from {}".format(path_to_model))
+        return cls(config, network=load_model(path_to_model), start_epoch=epoch+1)
 
     def get_action(self, environment):
         expanded_environment = np.expand_dims(environment, axis=0)
@@ -29,8 +38,6 @@ class TFRexModel(object):
         return self.time_to_execute_action
 
     def restore_from_path(self, path_to_model):
-        print("Restoring from {}".format(path_to_model))
-        self.train_model = load_model(path_to_model)
         self.target_model = load_model(path_to_model)
 
     def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
