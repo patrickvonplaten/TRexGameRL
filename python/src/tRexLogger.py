@@ -43,12 +43,12 @@ class Logger(object):
         return datetime.timedelta(seconds=int(time_elapsed))
 
     def get_time_left(self, average_time_per_epoch, epoch, epochs_to_train):
-        epoch_left = epochs_to_train - epoch
-        return average_time_per_epoch*epoch_left
+        epochs_left = epochs_to_train - epoch
+        return average_time_per_epoch*epochs_left
 
-    def format_time_left(self, start_time, epoch, epochs_to_train):
+    def format_time_left(self, start_time, epoch, epochs_to_train, start_epoch):
         time_elapsed = self.get_time_elapsed(start_time)
-        avg_time_per_epoch = self.get_avg_time_per_epoch(time_elapsed, epoch)
+        avg_time_per_epoch = self.get_avg_time_per_epoch(time_elapsed, epoch - start_epoch)
         time_left = self.get_time_left(avg_time_per_epoch, epoch, epochs_to_train)
         return datetime.timedelta(seconds=int(time_left))
 
@@ -94,7 +94,8 @@ class Logger(object):
         model_name = model_path.split('/')[-1]
         return int(model_name.split('.')[-2])
 
-    def log_parameter(self, epoch, epochs_to_train, start_time, score, loss, epsilon, reward_sum, avg_control_q):
+    def log_parameter(self, epoch, epochs_to_train, start_time, score, loss,
+            epsilon, reward_sum, avg_control_q, start_epoch):
         log = self.create_log({
             'epoch': self.format_epoch(epoch, epochs_to_train),
             'score': score,
@@ -103,8 +104,8 @@ class Logger(object):
             'avg_q': self.format_float(avg_control_q),
             'epsilon': round(epsilon, 2),
             'time elapsed': self.format_time_elapsed(start_time),
-            'avg time per epoch': self.format_avg_time_per_epoch(start_time, epoch),
-            'time left': self.format_time_left(start_time, epoch, epochs_to_train),
+            'avg time per epoch': self.format_avg_time_per_epoch(start_time, epoch-start_epoch),
+            'time left': self.format_time_left(start_time, epoch, epochs_to_train, start_epoch),
         })
         print(log)
         self.open()

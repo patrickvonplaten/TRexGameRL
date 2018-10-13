@@ -43,14 +43,13 @@ config = {
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 1500,
     'wait_after_restart': 1.5,
-    'num_control_environments': 400,
+    'num_control_environments': 500,
     'copy_train_to_target_every_epoch': 1,
     'keep_models': 5,
     'save_model_every_epoch': 10,
-    'restore_from_epoch': None
+    'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.1)
 }
 
-optimizer = RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0)
 conv_initialization = 'glorot_normal'
 dense_initialization = 'glorot_normal'
 
@@ -83,7 +82,6 @@ def create_duel_dqn():
     out = Add()([out_value, out_advantage])
     return out
 
-
 network = Model(inputs=input_shape, outputs=create_duel_dqn())
 
 if __name__ == "__main__":
@@ -91,7 +89,9 @@ if __name__ == "__main__":
     parser.add_argument('--display', default=False, action='store_true')
     args = parser.parse_args()
     config['display'] = args.display
-    model = TFRexModel(network=network, optimizer=optimizer, config=config)
+
     logger = Logger(config)
+#    model = TFRexModel.restore_from_epoch(epoch=-1, config=config, logger=logger)
+    model = TFRexModel(network=network, config=config)
     agent = Agent(model=model, logger=logger, mode=mode, config=config)
     agent.end()

@@ -28,8 +28,6 @@ class Agent(object):
         self.batch_size = config['batch_size']
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
-        self.path_to_init_weights = config['path_to_init_weights']
-        self.restore_from_epoch = config['restore_from_epoch']
         self.mode = mode
         self.model = model
         self.preprocessor = Prepocessor(vertical_crop_intervall=config['vertical_crop_intervall'],
@@ -63,11 +61,11 @@ class Agent(object):
         return self.decay_fn(step, self.decay_period, self.warmup_steps, self.epsilon_final)
 
     def train(self):
-        self.training_data = []
+        #        self.training_data = [] TODO: only needed when saving screenshots -> should be disabled in generel
         self.collect_control_environment_set(self.num_control_environments)
         start_time = time.time()
-        start_epoch = 0
 
+<<<<<<< HEAD
         if self.restore_from_epoch is not None:
             if self.restore_from_epoch < 0:
                 self.restore_from_epoch = self.logger.get_epoch_of_last_saved_model()
@@ -76,8 +74,11 @@ class Agent(object):
             start_epoch = self.restore_from_epoch + 1
 
         for epoch in range(start_epoch, self.epochs_to_train):
+=======
+        for epoch in range(self.model.start_epoch, self.epochs_to_train):
+>>>>>>> 157159a7c20a731b1451a672d031ac24d13c0812
             first_state = self.game.process_to_first_state()
-            self.training_data.append(first_state)
+#            self.training_data.append(first_state) TODO: only needed when saving screenshots -> should be disabled in generel
             environment_prev = self.preprocessor.process(first_state.get_image())
             crashed = False
             reward_sum = 0
@@ -86,7 +87,7 @@ class Agent(object):
             while not crashed:
                 action = self.get_action(epsilon, environment_prev)
                 state = self.process_action_to_state(action)
-                self.training_data.append(state)
+#                self.training_data.append(state) TODO: only needed when saving screenshots -> should be disabled in generel
 
                 reward = state.get_reward()
                 crashed = state.is_crashed()
@@ -101,7 +102,7 @@ class Agent(object):
             avg_control_q = self.get_sum_of_q_values_over_control_envs()
             self.logger.log_parameter(epoch=epoch, start_time=start_time, score=self.game.get_score(),
                     loss=loss, epsilon=epsilon, epochs_to_train=self.epochs_to_train,
-                    reward_sum=reward_sum, avg_control_q=avg_control_q)
+                    reward_sum=reward_sum, avg_control_q=avg_control_q, start_epoch=self.model.start_epoch)
             self.logger.save_model(epoch, self.model.train_model)
         self.logger.close()
 
