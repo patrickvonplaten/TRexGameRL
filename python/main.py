@@ -39,15 +39,15 @@ config = {
     'resize_dim': 80,
     'buffer_size': 4,
     'warmup_steps': 100,
-    'epsilon_final': 0.01,
+    'epsilon_final': 0.05,
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 1500,
     'wait_after_restart': 1.5,
     'num_control_environments': 500,
-    'copy_train_to_target_every_epoch': 1,
+    'copy_train_to_target_every_epoch': 5,
     'keep_models': 5,
     'save_model_every_epoch': 10,
-    'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.1)
+    'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.005)
 }
 
 conv_initialization = 'glorot_normal'
