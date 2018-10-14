@@ -43,11 +43,15 @@ config = {
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 1500,
     'wait_after_restart': 1.5,
-    'num_control_environments': 1,
+    'num_control_environments': 500,
     'copy_train_to_target_every_epoch': 1,
     'keep_models': 5,
-    'save_model_every_epoch': 1,
-    'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0.1)
+    'save_model_every_epoch': 20,
+    'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
+    'run_reward': 1,
+    'jump_reward': 0,
+    'duck_reward': 0,
+    'crash_reward': -100
 }
 
 conv_initialization = 'glorot_normal'

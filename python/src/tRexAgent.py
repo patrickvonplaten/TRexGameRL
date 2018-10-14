@@ -15,7 +15,7 @@ PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 class Agent(object):
     def __init__(self, model, logger, mode, config):
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
-        self.game = TRexGame(display=config['display'], wait_after_restart=config['wait_after_restart'])
+        self.game = TRexGame(config=config)
         self.time_to_execute_action = config['time_to_execute_action']
         self.memory = Memory(config['memory_size'])
         self.epochs_to_train = config['epochs_to_train']
