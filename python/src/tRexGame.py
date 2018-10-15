@@ -38,13 +38,14 @@ class Game(object):
 
 
 class TRexGame(Game):
-    def __init__(self, display=False, wait_after_restart=0):
+    def __init__(self, config):
         Game.__init__(self)
-        self.chrome_driver = ChromeDriver(display)
-        self.wait_after_restart = wait_after_restart
-        jump = Action(self._press_up, -1, "jump")
-        duck = Action(self._press_down, -3, "duck")
-        run = Action(lambda: None, 0, "run")
+        self.chrome_driver = ChromeDriver(config['display'])
+        self.wait_after_restart = config['wait_after_restart']
+        self.crash_reward = config['crash_reward']
+        jump = Action(self._press_up, config['jump_reward'], "jump")
+        duck = Action(self._press_down, config['run_reward'], "duck")
+        run = Action(lambda: None, 1, "run")
         self.actions = [jump, run, duck]
 
     def _press_up(self):
@@ -86,7 +87,7 @@ class TRexGame(Game):
     def _get_state(self, action_code):
         crashed = self.is_crashed()
         if crashed:
-            reward = -100
+            reward = self.crash_reward
         else:
             action = self.actions[action_code]
             reward = action.reward
