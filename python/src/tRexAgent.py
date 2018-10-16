@@ -30,8 +30,7 @@ class Agent(object):
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
         self.mode = mode
         self.model = model
-        self.preprocessor = Prepocessor(vertical_crop_intervall=config['vertical_crop_intervall'],
-                horizontal_crop_intervall=config['horizontal_crop_intervall'], buffer_size=config['buffer_size'], resize=config['resize_dim'])
+        self.preprocessor = Prepocessor(config=config)
         self.logger = logger
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
@@ -61,13 +60,11 @@ class Agent(object):
         return self.decay_fn(step, self.decay_period, self.warmup_steps, self.epsilon_final)
 
     def train(self):
-        #        self.training_data = [] TODO: only needed when saving screenshots -> should be disabled in generel
         self.collect_control_environment_set(self.num_control_environments)
         start_time = time.time()
 
         for epoch in range(self.model.start_epoch, self.epochs_to_train):
             first_state = self.game.process_to_first_state()
-#            self.training_data.append(first_state) TODO: only needed when saving screenshots -> should be disabled in generel
             environment_prev = self.preprocessor.process(first_state.get_image())
             crashed = False
             reward_sum = 0
@@ -76,7 +73,6 @@ class Agent(object):
             while not crashed:
                 action = self.get_action(epsilon, environment_prev)
                 state = self.process_action_to_state(action)
-#                self.training_data.append(state) TODO: only needed when saving screenshots -> should be disabled in generel
 
                 reward = state.get_reward()
                 crashed = state.is_crashed()
@@ -117,6 +113,8 @@ class Agent(object):
 
     def get_sum_of_q_values_over_control_envs(self):
         # get the predicted q from a control set. Good for plotting progress (see Atari paper)
+        if(self.control_environments.size is 0):
+            return 0
         q_values = self.model.predict_on_batch(self.control_environments, self.model.train_model)
         return np.average(np.max(q_values, axis=1))
 
@@ -129,9 +127,11 @@ class Agent(object):
     def end(self):
         return self.game.end()
 
-    def save_environment_screenshots(self, save_every_x=1):
-        for state_idx, state in enumerate(self.training_data[::save_every_x]):
-            image = self.preprocessor._process(state.get_image())
-            image_name = 'env_{}_{}.jpg'.format(state_idx, state.get_time_stamp())
+    def save_screenshots(self, save_every_x=1):
+        if(self.preprocessor.screenshots_for_visual is None):
+            print('No screenshots to be saved!')
+            return
+        for image_idx, image in enumerate(self.preprocessor.screenshots_for_visual[::save_every_x]):
+            image_name = 'env_{}.jpg'.format(image_idx)
             imwrite(os.path.join(self.path_to_image_folder, image_name), image)
         print("Saved images to {}".format(self.path_to_image_folder))

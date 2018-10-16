@@ -24,6 +24,7 @@ config = {
     'PATH_TO_MODELS': PATH_TO_MODELS,
     'PATH_TO_LOG': PATH_TO_LOG,
     'path_to_init_weights': None,
+    'save_screenshots': False,
     'layer_to_init_with_weights': ['layer1, layer2, layer3'],
     'num_actions': 2,
     'time_to_execute_action': 0.1,
@@ -32,7 +33,7 @@ config = {
     'batch_size': 32,
     'metrics': ['mse'],
     'loss': 'logcosh',
-    'epochs_to_train': 70,
+    'epochs_to_train': 1,
     'vertical_crop_intervall': (50, 150),
     'horizontal_crop_intervall': (0, 400),
     'memory_size': 10000,
@@ -43,10 +44,10 @@ config = {
     'decay_fn': 'linearly_decaying_epsilon',
     'decay_period': 1500,
     'wait_after_restart': 1.5,
-    'num_control_environments': 500,
+    'num_control_environments': 0,
     'copy_train_to_target_every_epoch': 1,
     'keep_models': 5,
-    'save_model_every_epoch': 20,
+    'save_model_every_epoch': 1,
     'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
     'run_reward': 1,
     'jump_reward': 0,
@@ -99,4 +100,5 @@ if __name__ == "__main__":
 #    model = TFRexModel.restore_from_epoch(epoch=-1, config=config, logger=logger)
     model = TFRexModel(network=network, config=config)
     agent = Agent(model=model, logger=logger, mode=mode, config=config)
+    agent.save_screenshots()
     agent.end()
