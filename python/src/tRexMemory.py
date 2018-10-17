@@ -41,7 +41,7 @@ class PrioritySumTree(object):
         self.update(storage_index, priority_score)
 
     def get_leaf_index_from_storage_index(self, storage_index):
-        return storage_index + self.num_sum_nodes 
+        return storage_index + self.num_sum_nodes
 
     def get_storage_index_from_leaf_index(self, leaf_index):
         return leaf_index - self.num_sum_nodes
