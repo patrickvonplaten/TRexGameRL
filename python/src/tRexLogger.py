@@ -59,7 +59,7 @@ class Logger(object):
         return '{:.4f}'.format(float_value)
 
     def format_epoch(self, epoch, epochs_to_train):
-        return '{}/{}'.format(epoch, epochs_to_train)
+        return '{}/{}'.format(epoch+1, epochs_to_train)
 
     def open(self):
         self.file = open(self.path_to_file, 'w')

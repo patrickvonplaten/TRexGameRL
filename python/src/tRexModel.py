@@ -57,13 +57,13 @@ class TFRexModel(object):
     def copy_weights_to_target_model(self):
         self.target_model.set_weights(self.train_model.get_weights())
 
-    def train(self, batch):
+    def train(self, batch, sample_weights):
         environment_prevs, actions, rewards, environment_nexts, crasheds = self.split_batch_into_parts(batch)
         assert environment_nexts.shape[0] == actions.shape[0] == rewards.shape[0] == environment_nexts.shape[0] == self.batch_size, 'all types of data needed for training should have same length'
 
         x = environment_prevs
         y = self._get_targets(environment_prevs, actions, rewards, environment_nexts, crasheds)
-        return self.train_model.train_on_batch(x, y)
+        return self.train_model.train_on_batch(x, y, sample_weight=sample_weights)
 
     def split_batch_into_parts(self, batch):
         num_parts = batch.shape[1]

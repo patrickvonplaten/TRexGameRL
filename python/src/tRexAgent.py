@@ -99,10 +99,13 @@ class Agent(object):
     def replay(self, epoch):
         if self.memory.cur_size < self.batch_size:
             return
-        batch = self.memory.sample(self.batch_size)
         if(epoch % self.copy_train_to_target_every_epoch is 0):
             self.model.copy_weights_to_target_model()
-        return self.model.train(batch)
+        batch, sample_weights = self.memory.sample(epoch)
+        losses = self.model.train(batch, sample_weights)
+#        TODO: create customized loss function to get loss for every sample
+#        self.memory.update(losses)
+        return losses
 
     def collect_control_environment_set(self, num_control_environments):
         state = None
