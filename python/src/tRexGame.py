@@ -44,8 +44,8 @@ class TRexGame(Game):
         self.wait_after_restart = config['wait_after_restart']
         self.crash_reward = config['crash_reward']
         jump = Action(self._press_up, config['jump_reward'], "jump")
-        duck = Action(self._press_down, config['run_reward'], "duck")
-        run = Action(lambda: None, 1, "run")
+        duck = Action(self._press_down, config['duck_reward'], "duck")
+        run = Action(lambda: None, config['run_reward'], "run")
         self.actions = [jump, run, duck]
 
     def _press_up(self):
