@@ -103,9 +103,8 @@ class Agent(object):
             self.model.copy_weights_to_target_model()
         batch, sample_weights = self.memory.sample(epoch)
         losses = self.model.train(batch, sample_weights)
-#        TODO: create customized loss function to get loss for every sample
-#        self.memory.update(losses)
-        return losses
+        self.memory.update(losses)
+        return np.mean(losses)
 
     def collect_control_environment_set(self, num_control_environments):
         state = None

@@ -47,8 +47,8 @@ class TFRexModel(object):
         q_values[np.arange(q_values.shape[0]), actions] = rewards + self.discount_factor * max_q_value_next
         return q_values
 
-    def predict_on_batch(self, environments, model):
-        return model.predict_on_batch(environments)
+    def predict_on_batch(self, samples, model):
+        return model.predict_on_batch(samples)
 
     def compile_train_model(self):
         # optimizer in construct, otherwise running stats will be reset!
@@ -61,9 +61,15 @@ class TFRexModel(object):
         environment_prevs, actions, rewards, environment_nexts, crasheds = self.split_batch_into_parts(batch)
         assert environment_nexts.shape[0] == actions.shape[0] == rewards.shape[0] == environment_nexts.shape[0] == self.batch_size, 'all types of data needed for training should have same length'
 
-        x = environment_prevs
-        y = self._get_targets(environment_prevs, actions, rewards, environment_nexts, crasheds)
-        return self.train_model.train_on_batch(x, y, sample_weight=sample_weights)
+        samples = environment_prevs
+        targets = self._get_targets(environment_prevs, actions, rewards, environment_nexts, crasheds)
+        losses_per_sample = self.get_abs_losses_per_sample(samples, targets)
+        self.train_model.train_on_batch(samples, targets, sample_weight=sample_weights)
+        return losses_per_sample
+
+    def get_abs_losses_per_sample(self, samples, targets):
+        predictions = self.predict_on_batch(samples, self.train_model)
+        return np.abs(np.sum(predictions - targets, axis=1))
 
     def split_batch_into_parts(self, batch):
         num_parts = batch.shape[1]

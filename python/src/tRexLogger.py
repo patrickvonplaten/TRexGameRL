@@ -53,7 +53,7 @@ class Logger(object):
         return datetime.timedelta(seconds=int(time_left))
 
     def format_loss(self, loss):
-        return self.format_float(loss[0]) if not not loss else 'No train'
+        return self.format_float(loss) if not not loss else 'No train'
 
     def format_float(self, float_value):
         return '{:.4f}'.format(float_value)

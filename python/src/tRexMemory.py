@@ -31,10 +31,13 @@ class Memory(object):
         for batch_idx in range(self.batch_size):
             self.storage_indexes[batch_idx] = self.sum_tree.get_storage_index_from_value(prob_interval[batch_idx])
             priority_prob = self.sum_tree.get_priority_prob_from_storage_index(self.storage_indexes[batch_idx])
-            self.sample_weights[batch_idx] = (self.batch_size * priority_prob)**(
-                    -self.get_priority_beta(epoch, self.priority_beta_decay_period, self.priority_beta))
+            self.sample_weights[batch_idx] = self.get_weight_for_sample(priority_prob, epoch)
 
         return self.storage[self.storage_indexes], self.sample_weights/np.max(self.sample_weights)
+
+    def get_weight_for_sample(self, priority_prob, epoch):
+        return (self.batch_size * priority_prob)**(
+                    -self.get_priority_beta(epoch, self.priority_beta_decay_period, self.priority_beta))
 
     def update(self, losses):
         [self.sum_tree.update(self.storage_indexes[x], losses[x]) for x in range(self.batch_size)]
@@ -69,7 +72,7 @@ class PrioritySumTree(object):
         return leaf_index - self.num_sum_nodes
 
     def update(self, storage_index, loss_of_sample):
-        priority_score_final = (min(self.max_priority_score, loss_of_sample) + self.priority_epsilon)**self.priority_alpha
+        priority_score_final = self.get_priority_score_final(loss_of_sample)
         leaf_index = self.get_leaf_index_from_storage_index(storage_index)
         change = priority_score_final - self.tree[leaf_index]
         self.tree[leaf_index] = priority_score_final
@@ -78,6 +81,9 @@ class PrioritySumTree(object):
         while parent_index != 0:
             parent_index = (parent_index - 1) // 2
             self.tree[parent_index] += change
+
+    def get_priority_score_final(self, loss):
+        return (min(self.max_priority_score, loss) + self.priority_epsilon)**self.priority_alpha
 
     def get_storage_index_from_value(self, value, parent_index=0):
         left_child_index = 2 * parent_index + 1
