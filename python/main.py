@@ -30,7 +30,7 @@ def create_memory_config(is_priority_experience_replay):
         'priority_alpha': 0.6,
         'priority_beta': 0.4,
         'priority_beta_decay_period': 10000,
-        'clipped_max_priority_score': 1
+        'clipped_max_priority_score': 10
     }
     if not is_priority_experience_replay:
         memory_config.update({
@@ -64,10 +64,10 @@ def create_config(is_priority_experience_replay=True):
         'buffer_size': 4,
         'wait_after_restart': 1.5,
         'num_control_environments': 500,
-        'copy_train_to_target_every_epoch': 20,
+        'copy_train_to_target_every_epoch': 10,
         'keep_models': 5,
         'save_model_every_epoch': 20,
-        'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
+        'optimizer': RMSprop(lr=0.0001, rho=0.9, epsilon=None, decay=0),
         'run_reward': 1,
         'jump_reward': 0,
         'duck_reward': 0,
