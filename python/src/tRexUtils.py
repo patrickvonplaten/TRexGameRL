@@ -1,6 +1,6 @@
 import numpy as np
 
-def linearly_decaying_epsilon(step, decay_period, warmup_steps, epsilon):
+def linearly_decaying_epsilon(step, epsilon_init, decay_period, warmup_steps, epsilon_final):
   """Returns the current epsilon for the agent's epsilon-greedy policy.
   This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
   al., 2015). The schedule is as follows:
@@ -15,10 +15,11 @@ def linearly_decaying_epsilon(step, decay_period, warmup_steps, epsilon):
   Returns:
     A float, the current epsilon value computed according to the schedule.
   """
+  assert epsilon_init > epsilon_final
   steps_left = decay_period + warmup_steps - step
-  bonus = (1.0 - epsilon) * steps_left / decay_period
-  bonus = np.clip(bonus, 0., 1. - epsilon)
-  return epsilon + bonus
+  bonus = (epsilon_init - epsilon_final) * steps_left / decay_period
+  bonus = np.clip(bonus, 0., epsilon_init - epsilon_final)
+  return epsilon_final + bonus
 
 def linearly_decaying_beta(step, decay_period, beta):
     beta_diff = 1 - beta

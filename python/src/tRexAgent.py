@@ -22,6 +22,7 @@ class Agent(object):
         self.decay_fn = getattr(tRexUtils, config['decay_fn'])
         self.warmup_steps = config['warmup_steps']
         self.epsilon_final = config['epsilon_final']
+        self.epsilon_init = config['epsilon_init']
         self.decay_period = config['decay_period']
         self.training_data = None
         self.num_actions = config['num_actions']
@@ -57,7 +58,7 @@ class Agent(object):
         print('Final score: {}'.format(self.game.get_score()))
 
     def get_epsilon(self, step):
-        return self.decay_fn(step, self.decay_period, self.warmup_steps, self.epsilon_final)
+        return self.decay_fn(step, self.epsilon_init, self.decay_period, self.warmup_steps, self.epsilon_final)
 
     def train(self):
         self.collect_control_environment_set(self.num_control_environments)
