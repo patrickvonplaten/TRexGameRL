@@ -21,16 +21,17 @@ import ipdb
 
 def create_memory_config(is_priority_experience_replay):
     memory_config = {
-        'memory_size': 10000,
+        'memory_size': 50000,
         'warmup_steps': 20,
-        'epsilon_final': 0.05,
+        'epsilon_init': 0.1,
+        'epsilon_final': 0,
         'decay_fn': 'linearly_decaying_epsilon',
-        'decay_period': 1500,
+        'decay_period': 2000,
         'priority_epsilon': 0.01,
         'priority_alpha': 0.6,
         'priority_beta': 0.4,
         'priority_beta_decay_period': 10000,
-        'clipped_max_priority_score': 2
+        'clipped_max_priority_score': 1
     }
     if not is_priority_experience_replay:
         memory_config.update({
