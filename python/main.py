@@ -21,15 +21,15 @@ import ipdb
 
 def create_memory_config(is_priority_experience_replay):
     memory_config = {
-        'memory_size': 10000,
+        'memory_size': 15000,
         'warmup_steps': 20,
         'epsilon_final': 0.05,
         'decay_fn': 'linearly_decaying_epsilon',
-        'decay_period': 1500,
+        'decay_period': 2500,
         'priority_epsilon': 0.01,
         'priority_alpha': 0.6,
         'priority_beta': 0.4,
-        'priority_beta_decay_period': 10000,
+        'priority_beta_decay_period': 12000,
         'clipped_max_priority_score': 10
     }
     if not is_priority_experience_replay:
@@ -50,27 +50,27 @@ def create_config(is_priority_experience_replay=True):
         'path_to_init_weights': None,
         'save_screenshots': False,
         'layer_to_init_with_weights': ['layer1, layer2, layer3'],
-        'num_actions': 2,
-        'time_to_execute_action': 0.1,
+        'num_actions': 3,
+        'time_to_execute_action': 0.05,
         'buffer_size': 4,
         'discount_factor': 0.99,
         'batch_size': 32,
         'metrics': ['mse'],
         'loss': 'logcosh',
-        'epochs_to_train': 20000,
+        'epochs_to_train': 30000,
         'vertical_crop_intervall': (50, 150),
         'horizontal_crop_intervall': (0, 400),
         'resize_dim': 80,
         'buffer_size': 4,
-        'wait_after_restart': 1.5,
+        'wait_after_restart': 3,
         'num_control_environments': 500,
         'copy_train_to_target_every_epoch': 10,
         'keep_models': 5,
-        'save_model_every_epoch': 20,
+        'save_model_every_epoch': 10,
         'optimizer': RMSprop(lr=0.0001, rho=0.9, epsilon=None, decay=0),
         'run_reward': 1,
-        'jump_reward': 0,
-        'duck_reward': 0,
+        'jump_reward': -5,
+        'duck_reward': -3,
         'crash_reward': -100
     }
     config.update(create_memory_config(is_priority_experience_replay))
