@@ -23,7 +23,7 @@ class Logger(object):
         self.saved_models = []
         self.running_avg = config['running_avg']
         self.running_scores = collections.deque(maxlen=self.running_avg)
-        self.epoch = 0
+        self.epoch = None
         self.file_name_template = 'network.epoch.{:07}.h5'
 
     def create_log(self, parameters):
