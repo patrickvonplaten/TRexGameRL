@@ -6,7 +6,7 @@ from tRexGame import TRexGame
 from tRexMemory import Memory
 from tRexPreprocessor import Prepocessor
 import tRexUtils
-import ipdb
+import ipdb  # noqa: F401
 
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
@@ -88,7 +88,7 @@ class Agent(object):
             avg_control_q = self.get_sum_of_q_values_over_control_envs()
             self.logger.log_parameter(epoch=epoch, start_time=start_time, score=self.game.get_score(),
                     loss=loss, epsilon=epsilon, epochs_to_train=self.epochs_to_train,
-                    reward_sum=reward_sum, avg_control_q=avg_control_q, start_epoch=self.model.start_epoch)
+                    reward=reward_sum, avg_control_q=avg_control_q, start_epoch=self.model.start_epoch)  # noqa: E128
             self.logger.save_model(epoch, self.model.train_model)
         self.logger.close()
 

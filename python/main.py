@@ -8,15 +8,15 @@ sys.path.insert(0, PATH_TO_TREX_MODULES)
 PATH_TO_MODELS = os.path.join(CUR_PATH, './models')
 PATH_TO_LOG = os.path.join(CUR_PATH, './log')
 
-from tRexModel import TFRexModel
-from tensorflow.python.keras.activations import relu
-from tensorflow.python.keras.layers import Conv2D, Flatten, Dense, Input, Add, Subtract, Lambda, MaxPooling2D
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.optimizers import RMSprop
-from tRexLogger import Logger
-from argparse import ArgumentParser
-from tRexAgent import Agent
-import ipdb
+from tRexModel import TFRexModel  # noqa: E402
+from tensorflow.python.keras.activations import relu  # noqa: E402
+from tensorflow.python.keras.layers import Conv2D, Flatten, Dense, Input, Add, Subtract, Lambda  # noqa: E402
+from tensorflow.python.keras.models import Model  # noqa: E402
+from tensorflow.python.keras.optimizers import RMSprop  # noqa: E402
+from tRexLogger import Logger  # noqa: E402
+from argparse import ArgumentParser  # noqa: E402
+from tRexAgent import Agent  # noqa: E402
+import ipdb  # noqa: E402, F401
 
 
 def create_memory_config(is_priority_experience_replay):
@@ -44,10 +44,18 @@ def create_memory_config(is_priority_experience_replay):
     return memory_config
 
 
+def create_log_config():
+    return {
+        'PATH_TO_LOG': PATH_TO_LOG,
+        'keep_models': 5,
+        'save_model_every_epoch': 1,
+        'running_avg': 200
+    }
+
+
 def create_config(is_priority_experience_replay=True):
     config = {
         'PATH_TO_MODELS': PATH_TO_MODELS,
-        'PATH_TO_LOG': PATH_TO_LOG,
         'path_to_init_weights': None,
         'save_screenshots': False,
         'layer_to_init_with_weights': ['layer1, layer2, layer3'],
@@ -63,11 +71,9 @@ def create_config(is_priority_experience_replay=True):
         'horizontal_crop_intervall': (0, 400),
         'resize_dim': 80,
         'buffer_size': 4,
-        'wait_after_restart': 2,
-        'num_control_environments': 500,
+        'wait_after_restart': 1.5,
+        'num_control_environments': 0,
         'copy_train_to_target_every_epoch': 20,
-        'keep_models': 5,
-        'save_model_every_epoch': 10,
         'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
         'run_reward': 1,
         'jump_reward': -1,
@@ -75,6 +81,7 @@ def create_config(is_priority_experience_replay=True):
         'crash_reward': -100
     }
     config.update(create_memory_config(is_priority_experience_replay))
+    config.update(create_log_config())
 
     return config
 

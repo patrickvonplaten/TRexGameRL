@@ -1,8 +1,10 @@
 import time
 import datetime
-import ipdb
+import ipdb  # noqa: F401
 import os
 import glob
+import collections
+import statistics
 
 
 class Logger(object):
@@ -19,6 +21,9 @@ class Logger(object):
         self.keep_models = config['keep_models']
         self.file = None
         self.saved_models = []
+        self.running_avg = config['running_avg']
+        self.running_scores = collections.deque(maxlen=self.running_avg)
+        self.epoch = None
         self.file_name_template = 'network.epoch.{:07}.h5'
 
     def create_log(self, parameters):
@@ -61,6 +66,32 @@ class Logger(object):
     def format_epoch(self, epoch, epochs_to_train):
         return '{}/{}'.format(epoch+1, epochs_to_train)
 
+    def format_score_avg(self):
+        return '{}'.format(self.get_avg_score())
+
+    def format_score_std_dev(self):
+        return '{}'.format(self.get_std_dev_score())
+
+    def format_time(self):
+        return datetime.datetime.now().strftime('%H:%M:%S')
+
+    def get_avg_score(self):
+        return round(sum(self.running_scores)/float(len(self.running_scores)))
+
+    def get_std_dev_score(self):
+        if(len(self.running_scores) is 1):
+            return 0
+        return round(statistics.stdev(self.running_scores), 2)
+
+    def set_running_scores(self, score, epoch):
+        assert self.epoch is epoch, 'set_running_scores should be called only once per epoch'
+        self.epoch += 1
+        self.running_scores.appendleft(score)
+
+    def set_start_epoch(self, epoch):
+        if(self.epoch is None):
+            self.epoch = epoch
+
     def open(self):
         self.file = open(self.path_to_file, 'a')
 
@@ -94,17 +125,22 @@ class Logger(object):
         return int(model_name.split('.')[-2])
 
     def log_parameter(self, epoch, epochs_to_train, start_time, score, loss,
-            epsilon, reward_sum, avg_control_q, start_epoch):
+            epsilon, reward, avg_control_q, start_epoch):  # noqa: E128
+        self.set_start_epoch(start_epoch)
+        self.set_running_scores(score, epoch)
         log = self.create_log({
-            'epoch': self.format_epoch(epoch, epochs_to_train),
+            'ep': self.format_epoch(epoch, epochs_to_train),
             'score': score,
+            'score_avg': self.format_score_avg(),
+            'score_dev': self.format_score_std_dev(),
             'loss': self.format_loss(loss),
-            'reward': reward_sum,
+            'reward': reward,
             'avg_q': self.format_float(avg_control_q),
             'epsilon': round(epsilon, 2),
-            'time elapsed': self.format_time_elapsed(start_time),
-            'avg time per epoch': self.format_avg_time_per_epoch(start_time, epoch-start_epoch),
-            'time left': self.format_time_left(start_time, epoch, epochs_to_train, start_epoch),
+            'time_elap': self.format_time_elapsed(start_time),
+            'avg_ep_time': self.format_avg_time_per_epoch(start_time, epoch-start_epoch),
+            'time_left': self.format_time_left(start_time, epoch, epochs_to_train, start_epoch),
+            'time': self.format_time()
         })
         print(log)
         self.open()
