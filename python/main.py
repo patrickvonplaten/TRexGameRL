@@ -63,14 +63,14 @@ def create_config(is_priority_experience_replay=True):
         'horizontal_crop_intervall': (0, 400),
         'resize_dim': 80,
         'buffer_size': 4,
-        'wait_after_restart': 3,
+        'wait_after_restart': 2,
         'num_control_environments': 500,
         'copy_train_to_target_every_epoch': 20,
         'keep_models': 5,
         'save_model_every_epoch': 10,
         'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
-        'run_reward': 0,
-        'jump_reward': 0,
+        'run_reward': 1,
+        'jump_reward': -1,
         'duck_reward': 0,
         'crash_reward': -100
     }
@@ -85,7 +85,7 @@ def create_dqn(dqn='duel_dqn'):
 
     input_shape = Input(shape=(80, 80, 4))
     conv1 = Conv2D(filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer=conv_initialization)(input_shape)
-    max_pool1 = MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None)
+    max_pool1 = MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None)(conv1)
     conv2 = Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), padding='valid', activation=relu, kernel_initializer=conv_initialization)(max_pool1)
     conv3 = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv2)
     flatten = Flatten()(conv3)
