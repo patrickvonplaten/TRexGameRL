@@ -1,8 +1,17 @@
 #!/usr/bin/env python
 
 from tRexMemory import Memory
+from tRexLogger import Logger
 import numpy as np
 import random
+import os
+import math
+import statistics
+
+
+CUR_PATH = os.path.dirname(os.path.abspath(__file__))
+PATH_TO_MODELS = os.path.join(CUR_PATH, './modelsTest')
+PATH_TO_LOG = os.path.join(CUR_PATH, './logTest')
 
 
 def test_tRex_memory():
@@ -126,5 +135,46 @@ def test_tRex_memory():
     test_update()
 
 
+def test_tRex_logger():
+    logger_config = {
+        'PATH_TO_LOG': PATH_TO_LOG,
+        'PATH_TO_MODELS': PATH_TO_MODELS,
+        'keep_models': 5,
+        'save_model_every_epoch': 1,
+        'running_avg': 20,
+    }
+
+    logger = Logger(logger_config)
+    assert logger.running_avg is 20
+
+    def test_set_running_scores():
+        scores = [random.randint(40, 200) for x in range(40)]
+        running_sum = 0
+        for idx, score in enumerate(scores):
+            logger.set_start_epoch(idx)
+            logger.set_running_scores(score, idx)
+            size_of_running_scores = min(logger.running_avg, idx+1)
+            assert len(logger.running_scores) is size_of_running_scores
+
+            running_sum += score
+
+            if(idx > logger.running_avg-1):
+                running_sum -= scores[idx - logger.running_avg]
+            avg = round(running_sum/size_of_running_scores)
+
+            if(idx is 0):
+                std_dev = 0
+            else:
+                idx_first_elem = max(0, idx-logger.running_avg+1)
+                std_dev = round(statistics.stdev(scores[idx_first_elem:size_of_running_scores+idx_first_elem]), 2)
+
+            assert logger.running_scores[0] is score
+            assert logger.get_avg_score() == avg
+            assert math.isclose(logger.get_std_dev_score(), std_dev, abs_tol=1e-2)
+
+    test_set_running_scores()
+
+
 if __name__ == "__main__":
     test_tRex_memory()
+    test_tRex_logger()
