@@ -8,10 +8,10 @@ class TFRexModel(object):
         self.start_epoch = start_epoch
         self.weights = None
         self.discount_factor = config['discount_factor']
-        self.batch_size = config['batch_size']
         self.metrics = config['metrics']
         self.loss = config['loss']
         self.optimizer = config['optimizer']
+        self.num_actions = config['num_actions']
         self.train_model = network
         self.target_model = clone_model(self.train_model)
         self.compile_train_model()
@@ -33,6 +33,9 @@ class TFRexModel(object):
         expanded_environment = np.expand_dims(environment, axis=0)
         result = self.train_model.predict(expanded_environment, batch_size=1)
         return np.argmax(result, axis=1)[0]
+
+    def get_num_actions(self):
+        return self.num_actions
 
     def restore_from_path(self, path_to_model):
         self.target_model = load_model(path_to_model)
@@ -56,7 +59,7 @@ class TFRexModel(object):
 
     def train(self, batch, sample_weights):
         environment_prevs, actions, rewards, environment_nexts, crasheds = self.split_batch_into_parts(batch)
-        assert environment_nexts.shape[0] == actions.shape[0] == rewards.shape[0] == environment_nexts.shape[0] == self.batch_size, 'all types of data needed for training should have same length'
+        assert environment_nexts.shape[0] == actions.shape[0] == rewards.shape[0] == environment_nexts.shape[0], 'all types of data needed for training should have same length'
 
         samples = environment_prevs
         targets = self._get_targets(environment_prevs, actions, rewards, environment_nexts, crasheds)

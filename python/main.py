@@ -9,24 +9,24 @@ PATH_TO_MODELS = os.path.join(CUR_PATH, './models')
 PATH_TO_LOG = os.path.join(CUR_PATH, './log')
 
 from tRexModel import TFRexModel  # noqa: E402
+from tRexGame import TRexGame  # noqa: E402
+from tRexMemory import Memory  # noqa: E402
+from tRexPreprocessor import Prepocessor  # noqa: E402
+from tRexLogger import Logger  # noqa: E402
+from tRexAgent import Agent  # noqa: E402
+from tRexDriver import ChromeDriver  # noqa: E402
 from tensorflow.python.keras.activations import relu  # noqa: E402
 from tensorflow.python.keras.layers import Conv2D, Flatten, Dense, Input, Add, Subtract, Lambda  # noqa: E402
 from tensorflow.python.keras.models import Model  # noqa: E402
 from tensorflow.python.keras.optimizers import RMSprop  # noqa: E402
-from tRexLogger import Logger  # noqa: E402
 from argparse import ArgumentParser  # noqa: E402
-from tRexAgent import Agent  # noqa: E402
 import ipdb  # noqa: E402, F401
 
 
 def create_memory_config(is_priority_experience_replay):
     memory_config = {
+        'batch_size': 32,
         'memory_size': 50000,
-        'warmup_steps': 20,
-        'epsilon_init': 0.1,
-        'epsilon_final': 0,
-        'decay_fn': 'linearly_decaying_epsilon',
-        'decay_period': 2000,
         'priority_epsilon': 0.01,
         'priority_alpha': 0.6,
         'priority_beta': 0.4,
@@ -54,28 +54,28 @@ def create_log_config():
     }
 
 
-def create_model_config():
-    return {
-        'num_actions': 2,
-        'time_to_execute_action': 0.1,
-        'batch_size': 32,
-        'metrics': ['mse'],
-        'loss': 'logcosh',
-        'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
-        'discount_factor': 0.99
-    }
-
-
-def create_agent_config():
-    return {
+def create_agent_config(is_debug=False):
+    agent_config = {
         'epochs_to_train': 2,
         'num_control_environments': 0,
+        'decay_fn': 'linearly_decaying_epsilon',
+        'epsilon_init': 0.1,
+        'epsilon_final': 0,
+        'decay_period': 2000,
+        'warmup_steps': 20,
         'copy_train_to_target_every_epoch': 20
     }
+    if(is_debug):
+        agent_config.update({
+            'epochs_to_train': 2,
+            'num_control_environments': 0
+        })
+    return agent_config
 
 
 def create_game_config():
     return {
+        'time_to_execute_action': 0.1,
         'wait_after_restart': 1.5,
         'crash_reward': -100,
         'run_reward': 1,
@@ -94,29 +94,20 @@ def create_preprocessor_config():
     }
 
 
-def create_debug_config():
+def create_model_config():
     return {
-        'epochs_to_train': 2,
-        'num_control_environments': 0
+        'num_actions': 2,
+        'metrics': ['mse'],
+        'loss': 'logcosh',
+        'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
+        'discount_factor': 0.99
     }
-
-
-def create_config(is_priority_experience_replay=True, is_debug=False):
-    config = {}
-    config.update(create_memory_config(is_priority_experience_replay))
-    config.update(create_log_config())
-    config.update(create_model_config())
-    config.update(create_agent_config())
-    config.update(create_game_config())
-    config.update(create_preprocessor_config())
-    if(is_debug):
-        config.update(create_debug_config())
-    return config
 
 
 def create_dqn(dqn='duel_dqn'):
     conv_initialization = 'glorot_normal'
     dense_initialization = 'glorot_normal'
+    model_config = create_model_config()
 
     input_shape = Input(shape=(80, 80, 4))
     conv1 = Conv2D(filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer=conv_initialization)(input_shape)
@@ -126,7 +117,7 @@ def create_dqn(dqn='duel_dqn'):
 
     def standard_dqn():
         dense = Dense(512, activation=relu, kernel_initializer=dense_initialization)(flatten)
-        out = Dense(config['num_actions'], kernel_initializer=dense_initialization)(dense)
+        out = Dense(model_config['num_actions'], kernel_initializer=dense_initialization)(dense)
         return out
 
     def duel_dqn():
@@ -139,7 +130,7 @@ def create_dqn(dqn='duel_dqn'):
         out_value = Dense(1, kernel_initializer=dense_initialization)(dense_value)
 
         dense_advantage = Dense(512, activation=relu, kernel_initializer=dense_initialization)(flatten)
-        out_std_advantage = Dense(config['num_actions'], kernel_initializer=dense_initialization)(dense_advantage)
+        out_std_advantage = Dense(model_config['num_actions'], kernel_initializer=dense_initialization)(dense_advantage)
         out_avg_advantage = Lambda(average_tensor)(out_std_advantage)
         out_advantage = Subtract()([out_std_advantage, out_avg_advantage])
         out = Add()([out_value, out_advantage])
@@ -159,15 +150,14 @@ if __name__ == "__main__":
     parser.add_argument('--debug', default=False, action='store_true')
     args = parser.parse_args()
 
-    config = create_config(is_debug=args.debug)
-    config['display'] = args.display
-
-    mode = 'train'
-    network = create_dqn()
-
-    logger = Logger(config)
-#    model = TFRexModel.restore_from_epoch(epoch=-1, config=config, logger=logger)
-    model = TFRexModel(network=network, config=config, logger=logger)
-    agent = Agent(model=model, logger=logger, mode=mode, config=config)
+    driver = ChromeDriver(display=args.display)
+    memory = Memory(config=create_memory_config(is_priority_experience_replay=True))
+    game = TRexGame(config=create_game_config(), chrome_driver=driver)
+    preprocessor = Prepocessor(config=create_preprocessor_config())
+    logger = Logger(config=create_log_config())
+#    model = TFRexModel.restore_from_epoch(epoch=-1, config=create_model_config(), logger=logger)
+    model = TFRexModel(network=create_dqn(), config=create_model_config(), logger=logger)
+    agent = Agent(model=model, memory=memory, preprocessor=preprocessor,
+            game=game, logger=logger, mode='train', config=create_agent_config(is_debug=args.debug))  # noqa: E128
     agent.save_screenshots()
     agent.end()

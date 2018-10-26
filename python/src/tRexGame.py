@@ -37,9 +37,9 @@ class Game(object):
 
 
 class TRexGame(Game):
-    def __init__(self, config):
+    def __init__(self, config, chrome_driver):
         Game.__init__(self)
-        self.chrome_driver = ChromeDriver(config['display'])
+        self.chrome_driver = chrome_driver
         self.wait_after_restart = config['wait_after_restart']
         self.time_to_execute_action = config['time_to_execute_action']
         self.crash_reward = config['crash_reward']
