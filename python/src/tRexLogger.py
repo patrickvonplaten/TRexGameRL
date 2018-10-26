@@ -5,6 +5,7 @@ import os
 import glob
 import collections
 import statistics
+from tensorflow.python.keras.callbacks import TensorBoard
 
 
 class Logger(object):
@@ -23,8 +24,11 @@ class Logger(object):
         self.saved_models = []
         self.running_avg = config['running_avg']
         self.running_scores = collections.deque(maxlen=self.running_avg)
-        self.epoch = None
+        self.epoch = 0
         self.file_name_template = 'network.epoch.{:07}.h5'
+
+    def get_tensor_board(self):
+        return TensorBoard(log_dir=self.path_to_log, histogram_freq=0, write_graph=True, write_images=True)
 
     def create_log(self, parameters):
         log = ''
@@ -84,13 +88,12 @@ class Logger(object):
         return round(statistics.stdev(self.running_scores), 2)
 
     def set_running_scores(self, score, epoch):
-        assert self.epoch is epoch, 'set_running_scores should be called only once per epoch'
+        assert self.epoch == epoch, 'set_running_scores should be called only once per epoch'
         self.epoch += 1
         self.running_scores.appendleft(score)
 
-    def set_start_epoch(self, epoch):
-        if(self.epoch is None):
-            self.epoch = epoch
+    def set_start_epoch(self, start_epoch):
+        self.epoch = start_epoch
 
     def open(self):
         self.file = open(self.path_to_file, 'w')
@@ -126,7 +129,6 @@ class Logger(object):
 
     def log_parameter(self, epoch, epochs_to_train, start_time, score, loss,
             epsilon, reward, avg_control_q, start_epoch):  # noqa: E128
-        self.set_start_epoch(start_epoch)
         self.set_running_scores(score, epoch)
         log = self.create_log({
             'ep': self.format_epoch(epoch, epochs_to_train),

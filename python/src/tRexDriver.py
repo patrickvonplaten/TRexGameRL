@@ -5,7 +5,7 @@ import os
 import base64
 import numpy as np
 import cv2
-import ipdb
+import ipdb  # noqa: F401
 
 HEIGHT = 150
 WIDTH = 600

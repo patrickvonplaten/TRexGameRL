@@ -38,7 +38,7 @@ def create_memory_config(is_priority_experience_replay):
             'priority_epsilon': 0,
             'priority_alpha': 0,
             'priority_beta': 0,
-            'priority_beta_decay_period': 0,
+            'priority_beta_decay_period': 1,
             'clipped_max_priority_score': 0
         })
     return memory_config
@@ -47,42 +47,70 @@ def create_memory_config(is_priority_experience_replay):
 def create_log_config():
     return {
         'PATH_TO_LOG': PATH_TO_LOG,
+        'PATH_TO_MODELS': PATH_TO_MODELS,
         'keep_models': 5,
         'save_model_every_epoch': 1,
         'running_avg': 200
     }
 
 
-def create_config(is_priority_experience_replay=True):
-    config = {
-        'PATH_TO_MODELS': PATH_TO_MODELS,
-        'path_to_init_weights': None,
-        'save_screenshots': False,
-        'layer_to_init_with_weights': ['layer1, layer2, layer3'],
+def create_model_config():
+    return {
         'num_actions': 2,
         'time_to_execute_action': 0.1,
-        'buffer_size': 4,
-        'discount_factor': 0.99,
         'batch_size': 32,
         'metrics': ['mse'],
         'loss': 'logcosh',
+        'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
+        'discount_factor': 0.99
+    }
+
+
+def create_agent_config():
+    return {
         'epochs_to_train': 2,
+        'num_control_environments': 0,
+        'copy_train_to_target_every_epoch': 20
+    }
+
+
+def create_game_config():
+    return {
+        'wait_after_restart': 1.5,
+        'crash_reward': -100,
+        'run_reward': 1,
+        'jump_reward': -1,
+        'duck_reward': 0
+    }
+
+
+def create_preprocessor_config():
+    return {
         'vertical_crop_intervall': (50, 150),
         'horizontal_crop_intervall': (0, 400),
         'resize_dim': 80,
         'buffer_size': 4,
-        'wait_after_restart': 1.5,
-        'num_control_environments': 0,
-        'copy_train_to_target_every_epoch': 20,
-        'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
-        'run_reward': 1,
-        'jump_reward': -1,
-        'duck_reward': 0,
-        'crash_reward': -100
+        'save_screenshots': False
     }
+
+
+def create_debug_config():
+    return {
+        'epochs_to_train': 2,
+        'num_control_environments': 0
+    }
+
+
+def create_config(is_priority_experience_replay=True, is_debug=False):
+    config = {}
     config.update(create_memory_config(is_priority_experience_replay))
     config.update(create_log_config())
-
+    config.update(create_model_config())
+    config.update(create_agent_config())
+    config.update(create_game_config())
+    config.update(create_preprocessor_config())
+    if(is_debug):
+        config.update(create_debug_config())
     return config
 
 
@@ -128,9 +156,10 @@ def create_dqn(dqn='duel_dqn'):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('--display', default=False, action='store_true')
+    parser.add_argument('--debug', default=False, action='store_true')
     args = parser.parse_args()
 
-    config = create_config()
+    config = create_config(is_debug=args.debug)
     config['display'] = args.display
 
     mode = 'train'
@@ -138,7 +167,7 @@ if __name__ == "__main__":
 
     logger = Logger(config)
 #    model = TFRexModel.restore_from_epoch(epoch=-1, config=config, logger=logger)
-    model = TFRexModel(network=network, config=config)
+    model = TFRexModel(network=network, config=config, logger=logger)
     agent = Agent(model=model, logger=logger, mode=mode, config=config)
     agent.save_screenshots()
     agent.end()

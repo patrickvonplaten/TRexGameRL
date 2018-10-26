@@ -1,15 +1,12 @@
 import numpy as np
-import ipdb
+import ipdb  # noqa: F401
 from tensorflow.python.keras.models import clone_model, load_model
-from tensorflow.python.keras.callbacks import TensorBoard
 
 
 class TFRexModel(object):
-    def __init__(self, config, network, start_epoch=0):
+    def __init__(self, config, network, logger, start_epoch=0):
         self.start_epoch = start_epoch
         self.weights = None
-        self.time_to_execute_action = config['time_to_execute_action']
-        self.num_actions = config['num_actions']
         self.discount_factor = config['discount_factor']
         self.batch_size = config['batch_size']
         self.metrics = config['metrics']
@@ -18,7 +15,9 @@ class TFRexModel(object):
         self.train_model = network
         self.target_model = clone_model(self.train_model)
         self.compile_train_model()
-        self.tensor_board = TensorBoard(log_dir=config['PATH_TO_LOG'], histogram_freq=0, write_graph=True, write_images=True)
+        self.logger = logger
+        self.logger.set_start_epoch(start_epoch)
+        self.tensor_board = self.logger.get_tensor_board()
         self.tensor_board.set_model(self.train_model)
 
     @classmethod
@@ -27,15 +26,13 @@ class TFRexModel(object):
             epoch = logger.get_epoch_of_last_saved_model()
         path_to_model = logger.get_file_path(epoch)
         print("Restoring from {}".format(path_to_model))
-        return cls(config, network=load_model(path_to_model), start_epoch=epoch+1)
+        start_epoch = epoch + 1
+        return cls(config, network=load_model(path_to_model), logger=logger, start_epoch=start_epoch)
 
     def get_action(self, environment):
         expanded_environment = np.expand_dims(environment, axis=0)
         result = self.train_model.predict(expanded_environment, batch_size=1)
         return np.argmax(result, axis=1)[0]
-
-    def get_time_to_execute_action(self):
-        return self.time_to_execute_action
 
     def restore_from_path(self, path_to_model):
         self.target_model = load_model(path_to_model)
