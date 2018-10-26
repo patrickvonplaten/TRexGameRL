@@ -2,9 +2,6 @@ import os
 import time
 import numpy as np
 from imageio import imwrite
-from tRexGame import TRexGame
-from tRexMemory import Memory
-from tRexPreprocessor import Prepocessor
 import tRexUtils
 import ipdb  # noqa: F401
 
@@ -13,10 +10,10 @@ PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 
 
 class Agent(object):
-    def __init__(self, model, logger, mode, config):
+    def __init__(self, model, logger, preprocessor, game, memory, mode, config):
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
-        self.game = TRexGame(config=config)
-        self.memory = Memory(config=config)
+        self.game = game
+        self.memory = memory
         self.epochs_to_train = config['epochs_to_train']
         self.decay_fn = getattr(tRexUtils, config['decay_fn'])
         self.warmup_steps = config['warmup_steps']
@@ -24,12 +21,11 @@ class Agent(object):
         self.epsilon_init = config['epsilon_init']
         self.decay_period = config['decay_period']
         self.training_data = None
-        self.num_actions = config['num_actions']
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
         self.mode = mode
         self.model = model
-        self.preprocessor = Prepocessor(config=config)
+        self.preprocessor = preprocessor
         self.logger = logger
         if not os.path.isdir(self.path_to_image_folder):
             os.mkdir(self.path_to_image_folder)
@@ -92,11 +88,11 @@ class Agent(object):
 
     def get_action(self, epsilon, environment_prev):
         if np.random.random() < epsilon:
-            return np.random.randint(0, self.num_actions)
+            return np.random.randint(0, self.model.get_num_actions())
         return self.model.get_action(environment_prev)
 
     def replay(self, epoch):
-        if self.memory.cur_size < self.model.batch_size:
+        if self.memory.cur_size < self.memory.get_batch_size():
             return
         if(epoch % self.copy_train_to_target_every_epoch is 0):
             self.model.copy_weights_to_target_model()

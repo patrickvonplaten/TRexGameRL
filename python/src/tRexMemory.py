@@ -1,5 +1,5 @@
 import numpy as np
-import ipdb
+import ipdb  # noqa F401
 import tRexUtils
 
 
@@ -25,6 +25,9 @@ class Memory(object):
         self.pos = (self.pos + 1) % self.size
         self.cur_size = min(self.cur_size + 1, self.size)
 
+    def get_batch_size(self):
+        return self.batch_size
+
     def sample(self, epoch):
         prob_interval = self.build_prob_interval(self.batch_size)
 
@@ -49,9 +52,7 @@ class Memory(object):
 
 
 class PrioritySumTree(object):
-    """
-    This SumTree code is taken and modified from: https://github.com/simoninithomas/Deep_reinforcement_learning_Course/blob/master/Dueling%20Double%20DQN%20with%20PER%20and%20fixed-q%20targets/Dueling%20Deep%20Q%20Learning%20with%20Doom%20%28%2B%20double%20DQNs%20and%20Prioritized%20Experience%20Replay%29.ipynb
-    """
+
     def __init__(self, capacity, config):
         self.num_leaf_nodes = capacity
         self.num_sum_nodes = self.num_leaf_nodes - 1
