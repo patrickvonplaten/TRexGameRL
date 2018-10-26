@@ -17,7 +17,6 @@ class Agent(object):
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
         self.game = TRexGame(config=config)
         self.memory = Memory(config=config)
-        self.time_to_execute_action = config['time_to_execute_action']
         self.epochs_to_train = config['epochs_to_train']
         self.decay_fn = getattr(tRexUtils, config['decay_fn'])
         self.warmup_steps = config['warmup_steps']
@@ -26,7 +25,6 @@ class Agent(object):
         self.decay_period = config['decay_period']
         self.training_data = None
         self.num_actions = config['num_actions']
-        self.batch_size = config['batch_size']
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
         self.mode = mode
@@ -45,7 +43,7 @@ class Agent(object):
             self.train()
 
     def process_action_to_state(self, action_code):
-        return self.game.process_action_to_state(action_code, self.time_to_execute_action)
+        return self.game.process_action_to_state(action_code)
 
     def play(self):
         self.model.load_weights()
@@ -98,7 +96,7 @@ class Agent(object):
         return self.model.get_action(environment_prev)
 
     def replay(self, epoch):
-        if self.memory.cur_size < self.batch_size:
+        if self.memory.cur_size < self.model.batch_size:
             return
         if(epoch % self.copy_train_to_target_every_epoch is 0):
             self.model.copy_weights_to_target_model()

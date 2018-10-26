@@ -32,9 +32,9 @@ class Game(object):
     def restart(self):
         return self._restart()
 
-    def process_action_to_state(self, action_code, time_to_execute_action):
+    def process_action_to_state(self, action_code):
         self.timestamp += 1
-        return self._process_action_to_state(action_code, time_to_execute_action)
+        return self._process_action_to_state(action_code, self.time_to_execute_action)
 
 
 class TRexGame(Game):
@@ -42,6 +42,7 @@ class TRexGame(Game):
         Game.__init__(self)
         self.chrome_driver = ChromeDriver(config['display'])
         self.wait_after_restart = config['wait_after_restart']
+        self.time_to_execute_action = config['time_to_execute_action']
         self.crash_reward = config['crash_reward']
         jump = Action(self._press_up, config['jump_reward'], "jump")
         duck = Action(self._press_down, config['duck_reward'], "duck")
