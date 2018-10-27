@@ -30,7 +30,7 @@ def create_memory_config(is_priority_experience_replay):
         'priority_epsilon': 0.01,
         'priority_alpha': 0.6,
         'priority_beta': 0.4,
-        'priority_beta_decay_period': 10000,
+        'priority_beta_decay_period': 5000,
         'clipped_max_priority_score': 1
     }
     if not is_priority_experience_replay:
@@ -56,19 +56,20 @@ def create_log_config():
 
 def create_model_config():
     return {
-        'time_to_execute_action': 0.1,
+        'time_to_execute_action': 0.05,
         'batch_size': 32,
         'metrics': ['mse'],
         'loss': 'logcosh',
         'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
-        'discount_factor': 0.99
+        'discount_factor': 0.95,
+        'num_actions': 2
     }
 
 
 def create_agent_config(is_debug=False):
     agent_config = {
-        'epochs_to_train': 2,
-        'num_control_environments': 0,
+        'epochs_to_train': 10000,
+        'num_control_environments': 500,
         'decay_fn': 'linearly_decaying_epsilon',
         'epsilon_init': 0.1,
         'epsilon_final': 0,
@@ -86,7 +87,7 @@ def create_agent_config(is_debug=False):
 
 def create_game_config():
     return {
-        'time_to_execute_action': 0.1,
+        'time_to_execute_action': 0.05,
         'wait_after_restart': 1.5,
         'crash_reward': -100,
         'run_reward': 1,
@@ -105,16 +106,6 @@ def create_preprocessor_config():
     }
 
 
-def create_model_config():
-    return {
-        'num_actions': 2,
-        'metrics': ['mse'],
-        'loss': 'logcosh',
-        'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
-        'discount_factor': 0.99
-    }
-
-
 def create_dqn(dqn='duel_dqn'):
     conv_initialization = 'glorot_normal'
     dense_initialization = 'glorot_normal'
@@ -122,8 +113,8 @@ def create_dqn(dqn='duel_dqn'):
 
     input_shape = Input(shape=(80, 80, 4))
     conv1 = Conv2D(filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer=conv_initialization)(input_shape)
-    max_pool1 = MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None)(conv1)
-    conv2 = Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), padding='valid', activation=relu, kernel_initializer=conv_initialization)(max_pool1)
+#    max_pool1 = MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None)(conv1)
+    conv2 = Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv1)
     conv3 = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv2)
     flatten = Flatten()(conv3)
 
