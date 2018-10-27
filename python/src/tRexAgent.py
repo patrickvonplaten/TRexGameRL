@@ -5,6 +5,7 @@ from imageio import imwrite
 import tRexUtils
 import ipdb  # noqa: F401
 
+
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 
@@ -31,6 +32,8 @@ class Agent(object):
             os.mkdir(self.path_to_image_folder)
         self.control_environments = np.zeros((self.num_control_environments, ) + self.preprocessor.environment_processed_shape)
         self.execute()
+        self.save_screenshots()
+        self.end()
 
     def execute(self):
         if(self.mode == 'play'):
