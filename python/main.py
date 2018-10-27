@@ -86,8 +86,8 @@ def create_game_config():
 
 def create_preprocessor_config():
     return {
-        'vertical_crop_intervall': (50, 150),
-        'horizontal_crop_intervall': (0, 400),
+        'vertical_crop_intervall': (0, 150),
+        'horizontal_crop_intervall': (0, 420),
         'resize_dim': 80,
         'buffer_size': 4,
         'save_screenshots': False
@@ -159,5 +159,3 @@ if __name__ == "__main__":
     model = TFRexModel(network=create_dqn(), config=create_model_config(), logger=logger)
     agent = Agent(model=model, memory=memory, preprocessor=preprocessor,
             game=game, logger=logger, mode='train', config=create_agent_config(is_debug=args.debug))  # noqa: E128
-    agent.save_screenshots()
-    agent.end()

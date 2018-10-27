@@ -1,17 +1,16 @@
 from collections import deque
 import numpy as np
-import cv2
-import ipdb
+from scipy.misc import imresize
+import ipdb  # noqa: F401
+from matplotlib import pyplot
 
 
 class Prepocessor(object):
     def __init__(self, config):
         self.vertical_crop_start = config['vertical_crop_intervall'][0]
         self.vertical_crop_end = config['vertical_crop_intervall'][1]
-        self.vertical_crop_length = self.vertical_crop_start - self.vertical_crop_end
         self.horizontal_crop_start = config['horizontal_crop_intervall'][0]
         self.horizontal_crop_end = config['horizontal_crop_intervall'][1]
-        self.horizontal_crop_length = self.horizontal_crop_start - self.horizontal_crop_end
         self.buffer_size = config['buffer_size']
         self.resize = config['resize_dim']
         # use [np.zeros() for i in range(..)] to have independent arrays
@@ -21,8 +20,10 @@ class Prepocessor(object):
 
     def _process(self, image):
         image_processed = self.crop_image(image)
-        image_processed = cv2.resize(image_processed, (self.resize, self.resize))
-        image_processed = image_processed / 128 - 1.0
+        ipdb.set_trace()
+        image_processed = self.transform_image_to_black_white(image_processed)
+        image_processed = imresize(image_processed, (self.resize, self.resize, 1))
+        image_processed = image_processed / 255.0
         return image_processed
 
     def reset(self):
@@ -41,3 +42,10 @@ class Prepocessor(object):
 
     def crop_image(self, image):
         return image[self.vertical_crop_start:self.vertical_crop_end, self.horizontal_crop_start:self.horizontal_crop_end]
+
+    def transform_image_to_black_white(self, image):
+        return (image == np.min(image))*1
+
+    def show_screenshot(self, screenshot):
+        pyplot.imshow(screenshot)
+        pyplot.show()
