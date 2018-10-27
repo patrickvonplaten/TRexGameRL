@@ -20,7 +20,6 @@ class Prepocessor(object):
 
     def _process(self, image):
         image_processed = self.crop_image(image)
-        ipdb.set_trace()
         image_processed = self.transform_image_to_black_white(image_processed)
         image_processed = imresize(image_processed, (self.resize, self.resize, 1))
         image_processed = image_processed / 255.0
