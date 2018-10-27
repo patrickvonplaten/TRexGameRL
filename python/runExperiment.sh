@@ -15,7 +15,7 @@ mkdir ${setupPath}/log
 mkdir ${setupPath}/models
 cd ${setupPath}
 
-$HOSTNAME > started_on_host.txt
+echo "${HOSTNAME}" > started_on_host.txt
 cp ${curPath}/main.py ${setupPath} 
 sed -i "/CUR_PATH = os.*/d" ${setupPath}/main.py
 sed -i "/PATH_TO_TREX_MODULES =*/c\PATH_TO_TREX_MODULES = \'\/u\/platen\/TRexGameRL\/python\/src\'" ${setupPath}/main.py

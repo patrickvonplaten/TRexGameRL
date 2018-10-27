@@ -18,7 +18,7 @@ from tRexDriver import ChromeDriver  # noqa: E402
 from tensorflow.python.keras.activations import relu  # noqa: E402
 from tensorflow.python.keras.layers import Conv2D, Flatten, Dense, Input, Add, Subtract, Lambda  # noqa: E402
 from tensorflow.python.keras.models import Model  # noqa: E402
-from tensorflow.python.keras.optimizers import RMSprop  # noqa: E402
+from tensorflow.python.keras.optimizers import RMSprop, Adam  # noqa: E402
 from argparse import ArgumentParser  # noqa: E402
 import ipdb  # noqa: E402, F401
 
@@ -60,7 +60,8 @@ def create_model_config():
         'batch_size': 32,
         'metrics': ['mse'],
         'loss': 'logcosh',
-        'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
+#        'optimizer': RMSprop(lr=0.00025, rho=0.9, epsilon=None, decay=0),
+        'optimizer': Adam(lr=0.00025, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
         'discount_factor': 0.95,
         'num_actions': 2
     }
