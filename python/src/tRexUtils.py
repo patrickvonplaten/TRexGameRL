@@ -1,29 +1,61 @@
 import numpy as np
+from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.activations import relu
+
 
 def linearly_decaying_epsilon(step, epsilon_init, decay_period, warmup_steps, epsilon_final):
-  """Returns the current epsilon for the agent's epsilon-greedy policy.
-  This follows the Nature DQN schedule of a linearly decaying epsilon (Mnih et
-  al., 2015). The schedule is as follows:
-    Begin at 1. until warmup_steps steps have been taken; then
-    Linearly decay epsilon from 1. to epsilon in decay_period steps; and then
-    Use epsilon from there on.
-  Args:
-    decay_period: float, the period over which epsilon is decayed.
-    step: int, the number of training steps completed so far.
-    warmup_steps: int, the number of steps taken before epsilon is decayed.
-    epsilon: float, the final value to which to decay the epsilon parameter.
-  Returns:
-    A float, the current epsilon value computed according to the schedule.
-  """
-  assert epsilon_init > epsilon_final
-  steps_left = decay_period + warmup_steps - step
-  bonus = (epsilon_init - epsilon_final) * steps_left / decay_period
-  bonus = np.clip(bonus, 0., epsilon_init - epsilon_final)
-  return epsilon_final + bonus
+    assert epsilon_init > epsilon_final
+    steps_left = decay_period + warmup_steps - step
+    bonus = (epsilon_init - epsilon_final) * steps_left / decay_period
+    bonus = np.clip(bonus, 0., epsilon_init - epsilon_final)
+    return epsilon_final + bonus
+
 
 def linearly_decaying_beta(step, decay_period, beta):
-    beta_diff = 1 - beta
     steps_left = decay_period - step
-    bonus = beta_diff / decay_period
-    bonus = np.clip(bonus, 0., beta_diff)
+    bonus = (1.0 - beta) * steps_left / decay_period
+    bonus = np.clip(bonus, 0., 1.0 - beta)
     return beta + bonus
+
+
+def average_tensor(x):
+    from tensorflow.python.keras.backend import mean
+    return mean(x, axis=1)
+
+
+def is_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+    
+
+def is_int(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
+
+
+def convert_config_to_correct_type(variable):
+    variable_type = type(variable)
+    if(variable_type is not dict and variable_type is not list):
+        value = variable
+        if(is_int(value)):
+            return int(value)
+        elif(is_float(value)):
+            return float(value)
+        return value
+    elif(variable_type is dict):
+        dictionary = variable
+        for key in dictionary.keys():
+            dictionary[key] = convert_config_to_correct_type(dictionary[key])
+        return dictionary
+    elif(variable_type is list):
+        value_list = variable
+        for idx, value in enumerate(value_list):
+            value_list[idx] = convert_config_to_correct_type(value)
+        return value_list
+    return variable

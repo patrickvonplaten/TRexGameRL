@@ -5,7 +5,6 @@ from imageio import imwrite
 import tRexUtils
 import ipdb  # noqa: F401
 
-
 CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 
