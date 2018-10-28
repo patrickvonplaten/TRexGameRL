@@ -21,6 +21,7 @@ from tensorflow.python.keras.models import Model  # noqa: E402
 from tensorflow.python.keras.optimizers import RMSprop  # noqa: E402
 from argparse import ArgumentParser  # noqa: E402
 import ipdb  # noqa: E402, F401
+from configobj import ConfigObj  # noqa: E402
 
 
 def create_memory_config(is_priority_experience_replay):
@@ -145,6 +146,9 @@ def create_dqn(dqn='duel_dqn'):
 
 
 if __name__ == "__main__":
+    config_file = str(sys.argv[1])
+    config = ConfigObj(config_file)
+
     parser = ArgumentParser()
     parser.add_argument('--display', default=False, action='store_true')
     parser.add_argument('--debug', default=False, action='store_true')
