@@ -1,6 +1,10 @@
 import numpy as np
 import ipdb  # noqa: F401
 from tensorflow.python.keras.models import clone_model, load_model
+from tensorflow.python.keras import optimizers
+from tensorflow.python.keras.models import Model  # noqa: E402
+from tensorflow.python.keras.layers import Input  # noqa: E402
+import tRexNetwork
 
 
 class TFRexModel(object):
@@ -10,7 +14,7 @@ class TFRexModel(object):
         self.discount_factor = config['discount_factor']
         self.metrics = config['metrics']
         self.loss = config['loss']
-        self.optimizer = config['optimizer']
+        self.optimizer = self.create_optimizer(config)
         self.num_actions = config['num_actions']
         self.train_model = network
         self.target_model = clone_model(self.train_model)
@@ -28,6 +32,23 @@ class TFRexModel(object):
         print("Restoring from {}".format(path_to_model))
         start_epoch = epoch + 1
         return cls(config, network=load_model(path_to_model), logger=logger, start_epoch=start_epoch)
+
+    @classmethod
+    def create_network(cls, config, logger):
+        conv_initialization = config['conv_init']
+        dense_initialization = config['dense_init']
+        network_type = config['network_type']
+        num_actions = config['num_actions']
+        input_shape = Input(shape=(80, 80, 4))
+        base_network = getattr(tRexNetwork, 'base_network')(input_shape, conv_initialization)
+        end_network = getattr(tRexNetwork, network_type)(base_network, dense_initialization, num_actions)
+        network = Model(inputs=input_shape, outputs=end_network)
+        return cls(config, network=network, logger=logger)
+
+    def create_optimizer(self, config):
+        decay = config['learning_rate_decay'] if 'learning_rate_decay' in config else 0
+        optimizer = getattr(optimizers, config['optimizer'])
+        return optimizer(lr=config['learning_rate'], decay=decay)
 
     def get_action(self, environment):
         expanded_environment = np.expand_dims(environment, axis=0)

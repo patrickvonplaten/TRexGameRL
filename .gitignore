@@ -23,3 +23,6 @@ python/experiments/*
 python/train_log.txt
 python/weights/*
 python/log/*
+
+# config file
+*.config
