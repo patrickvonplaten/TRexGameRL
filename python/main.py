@@ -37,12 +37,14 @@ if __name__ == "__main__":
     log_config['PATH_TO_LOG'] = PATH_TO_LOG
     log_config['PATH_TO_MODELS'] = PATH_TO_MODELS
     model_config = config['model_config']
+    restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
     agent_config = config['agent_config']
-    restore_epoch = config['restore_epoch'] if 'restore_epoch' in config else None
+    mode = agent_config['mode']
 
     if(args.debug):
         agent_config['epochs_to_train'] = 2
         agent_config['num_control_environments'] = 0
+        mode = 'train'
 
     driver = ChromeDriver(display=args.display)
     memory = Memory(config=memory_config)
@@ -50,10 +52,11 @@ if __name__ == "__main__":
     preprocessor = Prepocessor(config=preprocessor_config)
     logger = Logger(config=log_config)
 
-    if(restore_epoch is not None):
+    if(restore_epoch is not None or mode == 'play'):
+        assert restore_epoch is not None, 'if mode is "play", a the network parameters have to be restore'
         model = TFRexModel.restore_from_epoch(epoch=restore_epoch, config=model_config, logger=logger)
     else:
         model = TFRexModel.create_network(config=model_config, logger=logger)
 
     agent = Agent(model=model, memory=memory, preprocessor=preprocessor,
-            game=game, logger=logger, mode='train', config=agent_config)  # noqa: E128
+            game=game, logger=logger, config=agent_config)  # noqa: E128

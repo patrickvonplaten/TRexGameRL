@@ -1,7 +1,7 @@
-from tRexDriver import ChromeDriver
 from matplotlib import pyplot
 import time
 import numpy as np
+import ipdb  # noqa: F401
 
 
 class Game(object):
@@ -56,7 +56,7 @@ class TRexGame(Game):
 
     def _process_to_first_state(self):
         self._restart()
-        return self._process_action_to_state(1, self.wait_after_restart)
+        return self._process_action_to_state(0, self.wait_after_restart)
 
     def _restart(self):
         self.chrome_driver.execute_script("Runner.instance_.restart()")

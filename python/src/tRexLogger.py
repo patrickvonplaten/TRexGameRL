@@ -99,7 +99,8 @@ class Logger(object):
         self.file = open(self.path_to_file, 'w')
 
     def close(self):
-        self.file.close()
+        if(self.file is not None):
+            self.file.close()
 
     def save_model(self, epoch, model):
         if epoch % self.save_model_every_epoch is 0:

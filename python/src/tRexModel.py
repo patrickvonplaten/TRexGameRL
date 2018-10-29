@@ -58,9 +58,6 @@ class TFRexModel(object):
     def get_num_actions(self):
         return self.num_actions
 
-    def restore_from_path(self, path_to_model):
-        self.target_model = load_model(path_to_model)
-
     def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
         q_values = self.predict_on_batch(environment_prevs, self.train_model)
         max_q_value_next = np.amax(self.predict_on_batch(environment_nexts, self.target_model), axis=1)

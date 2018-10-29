@@ -10,7 +10,7 @@ PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 
 
 class Agent(object):
-    def __init__(self, model, logger, preprocessor, game, memory, mode, config):
+    def __init__(self, model, logger, preprocessor, game, memory, config):
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
         self.game = game
         self.memory = memory
@@ -20,10 +20,10 @@ class Agent(object):
         self.epsilon_final = config['epsilon_final']
         self.epsilon_init = config['epsilon_init']
         self.decay_period = config['decay_period']
+        self.mode = config['mode']
         self.training_data = None
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
-        self.mode = mode
         self.model = model
         self.preprocessor = preprocessor
         self.logger = logger
@@ -44,13 +44,13 @@ class Agent(object):
         return self.game.process_action_to_state(action_code)
 
     def play(self):
-        self.model.load_weights()
         state = self.game.process_to_first_state()
         while not state.is_crashed():
             image = state.get_image()
             environment = self.preprocessor.process(image)
             action = self.model.get_action(environment)
             state = self.process_action_to_state(action)
+        ipdb.set_trace()
         print('Final score: {}'.format(self.game.get_score()))
 
     def get_epsilon(self, step):
