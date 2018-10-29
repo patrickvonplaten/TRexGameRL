@@ -43,15 +43,13 @@ class TFRexModel(object):
         base_network = getattr(tRexNetwork, 'base_network')(input_shape, conv_initialization)
         end_network = getattr(tRexNetwork, network_type)(base_network, dense_initialization, num_actions)
         network = Model(inputs=input_shape, outputs=end_network)
-        network = cls.init_network(network, config, logger)
+        path_to_weights_to_load = config['path_to_weights_to_load'] if 'path_to_weights_to_load' in config else None
+        if(path_to_weights_to_load is not None):
+            network.load_weights(path_to_weights_to_load)
+            print("Loading weights from {}".format(path_to_weights_to_load))
         return cls(config, network=network, logger=logger)
 
     def init_network(network, config, logger):
-        path_to_weights_to_load = config['path_to_weights_to_load'] if 'path_to_weights_to_load' in config else None
-        if(path_to_weights_to_load is None):
-            return network
-        network.load_weights(path_to_weights_to_load )
-        print("Loading weights from {}".format(path_to_weights_to_load))
         return network
 
     def create_optimizer(self, config):
