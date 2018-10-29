@@ -9,12 +9,12 @@ priority_beta_decay_period=10000
 clipped_max_priority_score=1
 
 [log_config]
-keep_models=5
+keep_models=1
 save_model_every_epoch=1
 running_avg=200
 
 [agent_config]
-epochs_to_train=2
+epochs_to_train=5
 num_control_environments=0
 decay_fn=linearly_decaying_epsilon
 epsilon_init=0.1
@@ -22,10 +22,11 @@ epsilon_final=0
 decay_period=2000
 warmup_steps=20
 copy_train_to_target_every_epoch=20
+mode=play
 
 [game_config]
 time_to_execute_action=0.1
-wait_after_restart=1.5
+wait_after_restart=3
 crash_reward=-100
 run_reward=1
 jump_reward=-1
@@ -49,3 +50,4 @@ dense_init=glorot_normal
 learning_rate=0.001
 learning_rate_decay=0
 optimizer=RMSprop
+path_to_weights_to_load=/home/patrick/TRexGameRL/python/models/weights.epoch.0000004.h5
