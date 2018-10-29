@@ -14,9 +14,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# h5 weights
-*.h5
-
 # files
 chromedriver
 python/experiments/*
