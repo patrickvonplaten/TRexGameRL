@@ -50,7 +50,6 @@ class Agent(object):
             environment = self.preprocessor.process(image)
             action = self.model.get_action(environment)
             state = self.process_action_to_state(action)
-        ipdb.set_trace()
         print('Final score: {}'.format(self.game.get_score()))
 
     def get_epsilon(self, step):

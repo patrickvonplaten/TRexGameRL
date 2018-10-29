@@ -28,7 +28,7 @@ class TFRexModel(object):
     def restore_from_epoch(cls, epoch, config, logger):
         if epoch < 0:
             epoch = logger.get_epoch_of_last_saved_model()
-        path_to_model = logger.get_file_path(epoch)
+        path_to_model = logger.get_network_path(epoch)
         print("Restoring from {}".format(path_to_model))
         start_epoch = epoch + 1
         return cls(config, network=load_model(path_to_model), logger=logger, start_epoch=start_epoch)
@@ -43,7 +43,16 @@ class TFRexModel(object):
         base_network = getattr(tRexNetwork, 'base_network')(input_shape, conv_initialization)
         end_network = getattr(tRexNetwork, network_type)(base_network, dense_initialization, num_actions)
         network = Model(inputs=input_shape, outputs=end_network)
+        network = cls.init_network(network, config, logger)
         return cls(config, network=network, logger=logger)
+
+    def init_network(network, config, logger):
+        path_to_weights_to_load = config['path_to_weights_to_load'] if 'path_to_weights_to_load' in config else None
+        if(path_to_weights_to_load is None):
+            return network
+        network.load_weights(path_to_weights_to_load )
+        print("Loading weights from {}".format(path_to_weights_to_load))
+        return network
 
     def create_optimizer(self, config):
         decay = config['learning_rate_decay'] if 'learning_rate_decay' in config else 0

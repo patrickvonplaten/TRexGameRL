@@ -38,6 +38,7 @@ if __name__ == "__main__":
     log_config['PATH_TO_MODELS'] = PATH_TO_MODELS
     model_config = config['model_config']
     restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
+    restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
     agent_config = config['agent_config']
     mode = agent_config['mode']
 
@@ -52,8 +53,7 @@ if __name__ == "__main__":
     preprocessor = Prepocessor(config=preprocessor_config)
     logger = Logger(config=log_config)
 
-    if(restore_epoch is not None or mode == 'play'):
-        assert restore_epoch is not None, 'if mode is "play", a the network parameters have to be restore'
+    if(restore_epoch is not None):
         model = TFRexModel.restore_from_epoch(epoch=restore_epoch, config=model_config, logger=logger)
     else:
         model = TFRexModel.create_network(config=model_config, logger=logger)
