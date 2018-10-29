@@ -21,11 +21,12 @@ class Logger(object):
         self.save_model_every_epoch = config['save_model_every_epoch']
         self.keep_models = config['keep_models']
         self.file = None
-        self.saved_models = []
+        self.saved_epochs = []
         self.running_avg = config['running_avg']
         self.running_scores = collections.deque(maxlen=self.running_avg)
         self.epoch = 0
-        self.file_name_template = 'network.epoch.{:07}.h5'
+        self.network_name_template = 'network.epoch.{:07}.h5'
+        self.weights_name_template = 'weights.epoch.{:07}.h5'
 
     def get_tensor_board(self):
         return TensorBoard(log_dir=self.path_to_log, histogram_freq=0, write_graph=True, write_images=True)
@@ -99,21 +100,32 @@ class Logger(object):
         self.file = open(self.path_to_file, 'a')
 
     def close(self):
-        self.file.close()
+        if(self.file is not None):
+            self.file.close()
 
     def save_model(self, epoch, model):
         if epoch % self.save_model_every_epoch is 0:
-            model_file_path = self.get_file_path(epoch)
+            model_file_path = self.get_network_path(epoch)
+            weights_file_path = self.get_weights_path(epoch)
             model.save(model_file_path)
+            model.save_weights(weights_file_path)
             print('Saved model to {}'.format(model_file_path))
-            self.saved_models = [model_file_path] + self.saved_models
-            if len(self.saved_models) > self.keep_models:
-                oldest = self.saved_models.pop()
-                os.remove(oldest)
-                print('Deleted {}'.format(oldest))
+            print('Saved weights to {}'.format(weights_file_path))
+            self.saved_epochs = [epoch] + self.saved_epochs
+            if len(self.saved_epochs) > self.keep_models:
+                epoch_to_delete = self.saved_epochs.pop()
+                network_path = self.get_network_path(epoch_to_delete)
+                weights_path = self.get_weights_path(epoch_to_delete)
+                os.remove(network_path)
+                os.remove(weights_path)
+                print('Deleted {}'.format(network_path))
+                print('Deleted {}'.format(weights_path))
 
-    def get_file_path(self, epoch):
-        return os.path.join(self.path_to_models, self.file_name_template.format(int(epoch)))
+    def get_network_path(self, epoch):
+        return os.path.join(self.path_to_models, self.network_name_template.format(int(epoch)))
+
+    def get_weights_path(self, epoch):
+        return os.path.join(self.path_to_models, self.weights_name_template.format(int(epoch)))
 
     def get_epoch_of_last_saved_model(self):
         list_of_model_files = self.get_list_of_model_files()
