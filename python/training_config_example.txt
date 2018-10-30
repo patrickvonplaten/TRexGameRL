@@ -5,28 +5,30 @@ memory_size=50000
 priority_epsilon=0.01
 priority_alpha=0.6
 priority_beta=0.4
-priority_beta_decay_period=10000
+priority_beta_decay_period=7500
 clipped_max_priority_score=1
 
 [log_config]
-keep_models=1
-save_model_every_epoch=1
+keep_models=5
+save_model_every_epoch=5
 running_avg=200
+PATH_TO_LOG=log
+PATH_TO_MODELS=models
 
 [agent_config]
-epochs_to_train=5
-num_control_environments=0
+epochs_to_train=10000
+num_control_environments=500
 decay_fn=linearly_decaying_epsilon
 epsilon_init=0.1
 epsilon_final=0
 decay_period=2000
 warmup_steps=20
 copy_train_to_target_every_epoch=20
-mode=play
+mode=train
 
 [game_config]
-time_to_execute_action=0.1
-wait_after_restart=3
+time_to_execute_action=0.05
+wait_after_restart=2
 crash_reward=-100
 run_reward=1
 jump_reward=-1
@@ -43,11 +45,10 @@ save_screenshots=False
 num_actions=2
 metrics=mse,
 loss=logcosh
-discount_factor=0.99
+discount_factor=0.95
 network_type=duel_dqn
 conv_init=glorot_normal
 dense_init=glorot_normal
-learning_rate=0.001
+learning_rate=0.00025
 learning_rate_decay=0
-optimizer=RMSprop
-path_to_weights_to_load=/home/patrick/TRexGameRL/python/models/weights.epoch.0000004.h5
+optimizer=Adam
