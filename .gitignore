@@ -21,3 +21,6 @@ python/log/*
 
 # config file
 *.config
+
+chromedriver
+experiments/*
