@@ -23,4 +23,4 @@ python/log/*
 *.config
 
 chromedriver
-python/experiments/*
+python/experiments
