@@ -18,6 +18,8 @@ cd ${setupPath}
 
 echo "${HOSTNAME}" > started_on_host.txt
 cp ${curPath}/training.config ${setupPath} 
+sed -i "/PATH_TO_MODELS=*/c\PATH_TO_MODELS=\'${setupPath}\/models\'" ${setupPath}/training.config
+sed -i "/PATH_TO_LOG=*/c\PATH_TO_LOG=\'${setupPath}\/log\'" ${setupPath}/training.config
 cd ${setupPath}
 python ${mainPath}
 

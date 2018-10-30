@@ -34,10 +34,7 @@ if __name__ == "__main__":
     game_config = config['game_config']
     preprocessor_config = config['preprocessor_config']
     log_config = config['log_config']
-    log_config['PATH_TO_LOG'] = PATH_TO_LOG
-    log_config['PATH_TO_MODELS'] = PATH_TO_MODELS
     model_config = config['model_config']
-    restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
     restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
     agent_config = config['agent_config']
     mode = agent_config['mode']
