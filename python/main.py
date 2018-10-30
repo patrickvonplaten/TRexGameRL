@@ -5,9 +5,6 @@ CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 PATH_TO_TREX_MODULES = CUR_PATH + '/src'
 sys.path.insert(0, PATH_TO_TREX_MODULES)
 
-PATH_TO_MODELS = os.path.join(CUR_PATH, './models')
-PATH_TO_LOG = os.path.join(CUR_PATH, './log')
-
 from tRexModel import TFRexModel  # noqa: E402
 from tRexGame import TRexGame  # noqa: E402
 from tRexMemory import Memory  # noqa: E402
@@ -19,6 +16,10 @@ from configobj import ConfigObj  # noqa: E402
 from argparse import ArgumentParser  # noqa: E402
 from tRexUtils import convert_config_to_correct_type  # noqa: E402
 import ipdb  # noqa: E402, F401
+
+
+def parse_to_current_path(path):
+    return os.path.join(CUR_PATH, path)
 
 
 if __name__ == "__main__":
@@ -34,10 +35,9 @@ if __name__ == "__main__":
     game_config = config['game_config']
     preprocessor_config = config['preprocessor_config']
     log_config = config['log_config']
-    log_config['PATH_TO_LOG'] = PATH_TO_LOG
-    log_config['PATH_TO_MODELS'] = PATH_TO_MODELS
+    log_config['PATH_TO_LOG'] = parse_to_current_path(log_config['PATH_TO_LOG'])
+    log_config['PATH_TO_MODELS'] = parse_to_current_path(log_config['PATH_TO_MODELS'])
     model_config = config['model_config']
-    restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
     restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
     agent_config = config['agent_config']
     mode = agent_config['mode']
