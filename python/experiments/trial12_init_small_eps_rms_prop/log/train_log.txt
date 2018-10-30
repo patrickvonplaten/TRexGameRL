@@ -9851,3 +9851,4 @@ epsilon: 0.0 | time_left: 1:26:09 | time_elap: 3 days, 21:40:09 | ep: 9850/10000
 epsilon: 0.0 | time_left: 1:25:35 | time_elap: 3 days, 21:40:54 | ep: 9851/10000 | loss: 0.2134 | score_dev: 228.49 | avg_ep_time: 0:00:34 | avg_q: 12.9315 | score_avg: 629.0 | score: 491 | time: 12:34:25 | reward: 254 | 
 epsilon: 0.0 | time_left: 1:25:01 | time_elap: 3 days, 21:41:52 | ep: 9852/10000 | loss: 1.1184 | score_dev: 226.92 | avg_ep_time: 0:00:34 | avg_q: 12.2201 | score_avg: 631.0 | score: 655 | time: 12:35:23 | reward: 354 | 
 epsilon: 0.0 | time_left: 1:24:27 | time_elap: 3 days, 21:42:39 | ep: 9853/10000 | loss: 0.3154 | score_dev: 223.73 | avg_ep_time: 0:00:34 | avg_q: 12.7481 | score_avg: 634.0 | score: 520 | time: 12:36:10 | reward: 276 | 
+epsilon: 0.0 | time_left: 1:23:53 | time_elap: 3 days, 21:43:27 | ep: 9854/10000 | loss: 0.8688 | score_dev: 223.13 | avg_ep_time: 0:00:34 | avg_q: 11.8736 | score_avg: 634.0 | score: 534 | time: 12:36:59 | reward: 286 | 
