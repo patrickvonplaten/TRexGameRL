@@ -44,13 +44,14 @@ class Agent(object):
         return self.game.process_action_to_state(action_code)
 
     def play(self):
-        state = self.game.process_to_first_state()
-        while not state.is_crashed():
-            image = state.get_image()
-            environment = self.preprocessor.process(image)
-            action = self.model.get_action(environment)
-            state = self.process_action_to_state(action)
-        print('Final score: {}'.format(self.game.get_score()))
+        while True:
+            state = self.game.process_to_first_state()
+            while not state.is_crashed():
+                image = state.get_image()
+                environment = self.preprocessor.process(image)
+                action = self.model.get_action(environment)
+                state = self.process_action_to_state(action)
+            print('Score: {}'.format(self.game.get_score()))
 
     def get_epsilon(self, step):
         return self.decay_fn(step, self.epsilon_init, self.decay_period, self.warmup_steps, self.epsilon_final)
