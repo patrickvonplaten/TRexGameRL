@@ -2,13 +2,15 @@
 
 curPath=$(pwd)
 experimentsFile=${curPath}/experiments
-logFile=${1}
+trialNumToPlot=${1}
 saveFolder=${curPath}/plots
 pythonPlotter=${curPath}/src/tRexPlotter.py
+logFile=$(ls ${experimentsFile}/trial${trialNumToPlot}_*/log/train_log.txt)
 
 if [ -z "${title}" ]
   then
-    title="trial"
+    title="trial${trialNumToPlot}"
 fi
 
-python ${pythonPlotter} --log=${logFile} --save=${saveFolder} --title=${title}
+python ${pythonPlotter} --log=${logFile} --title=${title} --save=${saveFolder}
+echo "Created plots from ${logFile}"

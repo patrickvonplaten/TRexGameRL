@@ -13,6 +13,6 @@ if [ ${numOfExperiment} = "all" ]
   then
 	experimentToDelete=${curPath}/experiments/*
 else
-	experimentToDelete=${curPath}/experiments/trial${numOfExperiment}*
-
+	experimentToDelete=${curPath}/experiments/trial${numOfExperiment}_*
+fi
 rm -r ${experimentToDelete}
