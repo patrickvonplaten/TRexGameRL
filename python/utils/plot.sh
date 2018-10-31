@@ -6,7 +6,7 @@ trialNumToPlot=${1}
 saveFolder=${curPath}/plots
 pythonPlotter=${curPath}/src/tRexPlotter.py
 cd ${experimentsFile}
-trialName=$(ls trial${trialNumToPlot}_*)
+trialName=$( find . -name trial${trialNumToPlot}_* | sed 's/.\///g')
 cd ${curPath}
 logFile=${experimentsFile}/${trialName}/log/train_log.txt
 
