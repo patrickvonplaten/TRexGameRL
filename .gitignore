@@ -26,3 +26,4 @@ python/log/*
 
 chromedriver
 python/experiments
+python/models/events*
