@@ -24,7 +24,7 @@ epsilon_final=0
 decay_period=2000
 warmup_steps=20
 copy_train_to_target_every_epoch=20
-mode=train
+mode=play
 
 [game_config]
 time_to_execute_action=0.05
@@ -52,3 +52,4 @@ dense_init=glorot_normal
 learning_rate=0.00025
 learning_rate_decay=0
 optimizer=Adam
+path_to_weights_to_load=/u/platen/TRexGameRL/python/models/weights.epoch.0003105.h5

@@ -43,8 +43,10 @@ if __name__ == "__main__":
     mode = agent_config['mode']
 
     if(args.debug):
-        agent_config['epochs_to_train'] = 2
+        agent_config['epochs_to_train'] = 3
         agent_config['num_control_environments'] = 0
+        log_config['save_model_every_epoch'] = 1
+        log_config['keep_models'] = 3
         mode = 'train'
 
     driver = ChromeDriver(display=args.display)
