@@ -5,11 +5,15 @@ experimentsFile=${curPath}/experiments
 trialNumToPlot=${1}
 saveFolder=${curPath}/plots
 pythonPlotter=${curPath}/src/tRexPlotter.py
-logFile=$(ls ${experimentsFile}/trial${trialNumToPlot}_*/log/train_log.txt)
+cd ${experimentsFile}
+trialName=$(ls trial${trialNumToPlot}_*)
+cd ${curPath}
+logFile=${experimentsFile}/${trialName}/log/train_log.txt
+
 
 if [ -z "${title}" ]
   then
-    title="trial${trialNumToPlot}"
+    title=${trialName}
 fi
 
 python ${pythonPlotter} --log=${logFile} --title=${title} --save=${saveFolder}
