@@ -24,6 +24,5 @@ python/log/*
 # config file
 *.config
 
-chromedriver
 python/experiments
 python/models/events*
