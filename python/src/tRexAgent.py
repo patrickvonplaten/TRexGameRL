@@ -12,8 +12,12 @@ PATH_TO_IMAGE_FOLDER = os.path.join(CUR_PATH, '../../imagesToCheck')
 class Agent(object):
     def __init__(self, model, logger, preprocessor, game, memory, config):
         self.path_to_image_folder = PATH_TO_IMAGE_FOLDER
+        self.model = model
+        self.logger = logger
+        self.preprocessor = preprocessor
         self.game = game
         self.memory = memory
+
         self.epochs_to_train = config['epochs_to_train']
         self.decay_fn = getattr(tRexUtils, config['decay_fn'])
         self.warmup_steps = config['warmup_steps']
@@ -21,15 +25,13 @@ class Agent(object):
         self.epsilon_init = config['epsilon_init']
         self.decay_period = config['decay_period']
         self.mode = config['mode']
-        self.training_data = None
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
-        self.model = model
-        self.preprocessor = preprocessor
-        self.logger = logger
-        if not os.path.isdir(self.path_to_image_folder):
-            os.mkdir(self.path_to_image_folder)
+
+        self.training_data = None
         self.control_environments = np.zeros((self.num_control_environments, ) + self.preprocessor.environment_processed_shape)
+
+# TODO:following 3 lines should be executed somewhere else
         self.execute()
         self.save_screenshots()
         self.end()
@@ -127,6 +129,8 @@ class Agent(object):
         return self.game.end()
 
     def save_screenshots(self, save_every_x=1):
+        if not os.path.isdir(self.path_to_image_folder):
+            os.mkdir(self.path_to_image_folder)
         if(self.preprocessor.screenshots_for_visual is None):
             print('No screenshots to be saved!')
             return

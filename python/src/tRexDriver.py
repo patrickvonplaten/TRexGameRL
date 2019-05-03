@@ -36,8 +36,8 @@ class ChromeDriver(object):
         driver = webdriver.Chrome(executable_path=CHROME_EXECUTABLEPATH, chrome_options=chrome_options)
         driver.get(TREX_HTML_PATH)
         # https://stackoverflow.com/questions/40632204/selenium-webdriver-screenshot-in-python-has-the-wrong-resolution
-        dx, dy = driver.execute_script("var w=window; return [w.outerWidth - w.innerWidth, w.outerHeight - w.innerHeight];")
-        driver.set_window_size(WIDTH + dx, HEIGHT + dy)
+        width_add, height_add = driver.execute_script("var w=window; return [w.outerWidth - w.innerWidth, w.outerHeight - w.innerHeight];")
+        driver.set_window_size(WIDTH + width_add, HEIGHT + height_add)
         return driver
 
     def _get_raw_image(self):
