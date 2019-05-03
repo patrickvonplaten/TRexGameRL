@@ -15,6 +15,7 @@ currentHighestNumber=$(ls ${basePath}/experiments | sed 's/\([0-9]\+\).*/\1/g' |
 nameOfExperiment="trial$((currentHighestNumber + 1))_${nameOfExperiment}"
 setupPath=${basePath}/experiments/${nameOfExperiment}
 setupPathRelativ=experiments/${nameOfExperiment}
+
 mkdir ${setupPath}
 mkdir ${setupPath}/log
 mkdir ${setupPath}/models

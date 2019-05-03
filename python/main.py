@@ -31,6 +31,7 @@ if __name__ == "__main__":
 
     config = ConfigObj(args.config).dict()
     config = convert_config_to_correct_type(config)
+
     memory_config = config['memory_config']
     game_config = config['game_config']
     preprocessor_config = config['preprocessor_config']
@@ -38,27 +39,20 @@ if __name__ == "__main__":
     log_config['PATH_TO_LOG'] = parse_to_current_path(log_config['PATH_TO_LOG'])
     log_config['PATH_TO_MODELS'] = parse_to_current_path(log_config['PATH_TO_MODELS'])
     model_config = config['model_config']
-    restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
     agent_config = config['agent_config']
-    mode = agent_config['mode']
 
     if(args.debug):
         agent_config['epochs_to_train'] = 3
         agent_config['num_control_environments'] = 0
         log_config['save_model_every_epoch'] = 1
         log_config['keep_models'] = 3
-        mode = 'train'
 
     driver = ChromeDriver(display=args.display)
     memory = Memory(config=memory_config)
     game = TRexGame(config=game_config, chrome_driver=driver)
     preprocessor = Prepocessor(config=preprocessor_config)
     logger = Logger(config=log_config)
-
-    if(restore_epoch is not None):
-        model = TFRexModel.restore_from_epoch(epoch=restore_epoch, config=model_config, logger=logger)
-    else:
-        model = TFRexModel.create_network(config=model_config, logger=logger)
-
+    restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
+    model = TFRexModel.restore_from_epoch(epoch=restore_epoch, config=model_config, logger=logger) if restore_epoch is not None else TFRexModel.create_network(config=model_config, logger=logger)
     agent = Agent(model=model, memory=memory, preprocessor=preprocessor,
             game=game, logger=logger, config=agent_config)  # noqa: E128
