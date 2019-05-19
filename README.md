@@ -1,4 +1,4 @@
-Project trying to use reinforcement learning for the TRex game provided by chromium 
+Applying Reinforcement learning for the TRex game provided by chromium 
 
 Installation:
 - chrome
