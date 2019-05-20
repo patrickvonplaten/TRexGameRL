@@ -49,9 +49,6 @@ class TFRexModel(object):
             print("Loading weights from {}".format(path_to_weights_to_load))
         return cls(config, network=network, logger=logger)
 
-    def init_network(network, config, logger):
-        return network
-
     def create_optimizer(self, config):
         decay = config['learning_rate_decay'] if 'learning_rate_decay' in config else 0
         optimizer = getattr(optimizers, config['optimizer'])
@@ -66,14 +63,13 @@ class TFRexModel(object):
         return self.num_actions
 
     def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
-        q_values = self.predict_on_batch(environment_prevs, self.train_model)
-        max_q_value_next = np.amax(self.predict_on_batch(environment_nexts, self.target_model), axis=1)
-        max_q_value_next[crasheds] = 0
-        q_values[np.arange(q_values.shape[0]), actions] = rewards + self.discount_factor * max_q_value_next
+        q_values = self.train_model.predict_on_batch(environment_prevs)
+        max_actions_next = np.argmax(self.train_model.predict_on_batch(environment_nexts), axis=1)
+        num_batch_aranged = np.arange(max_actions_next.shape[0])
+        q_values_next = self.target_model.predict_on_batch(environment_nexts)[num_batch_aranged, max_actions_next]
+        q_values_next[crasheds] = 0
+        q_values[num_batch_aranged, actions] = rewards + self.discount_factor * q_values_next
         return q_values
-
-    def predict_on_batch(self, samples, model):
-        return model.predict_on_batch(samples)
 
     def compile_train_model(self):
         # optimizer in construct, otherwise running stats will be reset!
@@ -93,7 +89,7 @@ class TFRexModel(object):
         return losses_per_sample
 
     def get_abs_losses_per_sample(self, samples, targets):
-        predictions = self.predict_on_batch(samples, self.train_model)
+        predictions = self.train_model.predict_on_batch(samples)
         return np.abs(np.sum(predictions - targets, axis=1))
 
     def split_batch_into_parts(self, batch):

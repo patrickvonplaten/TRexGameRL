@@ -116,7 +116,7 @@ class Agent(object):
         # get the predicted q from a control set. Good for plotting progress (see Atari paper)
         if(self.control_environments.size is 0):
             return 0
-        q_values = self.model.predict_on_batch(self.control_environments, self.model.train_model)
+        q_values = self.model.train_model.predict_on_batch(self.control_environments)
         return np.average(np.max(q_values, axis=1))
 
     def get_random_state(self, prev_state):

@@ -8,4 +8,6 @@ sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver)
 - pip install -r requirements.txt
 
 12/2019:
-Using the DQN - Network proposed in Deep Mind's Atari Paper together with Dueling Network Architectures and Prioritized Experience Replay, we manage to average a score of ~800 (see python/plots/score_plot_trial19_mem_50k_lr_0.0001_decay_5000.png).
+Using the DQN - Network proposed in Deep Mind's Atari Paper together with Dueling 
+Network Architectures and Prioritized Experience Replay, 
+we manage to average a score of ~800 (see python/plots/score_plot_trial19_mem_50k_lr_0.0001_decay_5000.png).
