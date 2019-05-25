@@ -9,17 +9,17 @@ import tRexNetwork
 
 class TFRexModel(object):
     def __init__(self, config, network, logger, start_epoch=0):
-        self.start_epoch = start_epoch
-        self.weights = None
         self.discount_factor = config['discount_factor']
         self.metrics = config['metrics']
         self.loss = config['loss']
-        self.optimizer = self.create_optimizer(config)
         self.num_actions = config['num_actions']
         self.train_model = network
+        self.logger = logger
+        self.start_epoch = start_epoch
+        self.weights = None
+        self.optimizer = self.create_optimizer(config)
         self.target_model = clone_model(self.train_model)
         self.compile_train_model()
-        self.logger = logger
         self.logger.set_start_epoch(start_epoch)
         self.tensor_board = self.logger.get_tensor_board()
         self.tensor_board.set_model(self.train_model)
@@ -63,6 +63,7 @@ class TFRexModel(object):
         return self.num_actions
 
     def _get_targets(self, environment_prevs, actions, rewards, environment_nexts, crasheds):
+        # calculate q_target values according to deep double Q-learning ( http://proceedings.mlr.press/v48/wangf16.pdf )
         q_values = self.train_model.predict_on_batch(environment_prevs)
         max_actions_next = np.argmax(self.train_model.predict_on_batch(environment_nexts), axis=1)
         num_batch_aranged = np.arange(max_actions_next.shape[0])
@@ -81,7 +82,6 @@ class TFRexModel(object):
     def train(self, batch, sample_weights):
         environment_prevs, actions, rewards, environment_nexts, crasheds = self.split_batch_into_parts(batch)
         assert environment_nexts.shape[0] == actions.shape[0] == rewards.shape[0] == environment_nexts.shape[0], 'all types of data needed for training should have same length'
-
         samples = environment_prevs
         targets = self._get_targets(environment_prevs, actions, rewards, environment_nexts, crasheds)
         losses_per_sample = self.get_abs_losses_per_sample(samples, targets)

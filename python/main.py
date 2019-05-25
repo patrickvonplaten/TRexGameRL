@@ -56,3 +56,6 @@ if __name__ == "__main__":
     model = TFRexModel.restore_from_epoch(epoch=restore_epoch, config=model_config, logger=logger) if restore_epoch is not None else TFRexModel.create_network(config=model_config, logger=logger)
     agent = Agent(model=model, memory=memory, preprocessor=preprocessor,
             game=game, logger=logger, config=agent_config)  # noqa: E128
+    agent.run()
+#    agent.save_screenshots()
+    agent.end()

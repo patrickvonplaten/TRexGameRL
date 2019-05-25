@@ -17,7 +17,6 @@ class Agent(object):
         self.preprocessor = preprocessor
         self.game = game
         self.memory = memory
-
         self.epochs_to_train = config['epochs_to_train']
         self.decay_fn = getattr(tRexUtils, config['decay_fn'])
         self.warmup_steps = config['warmup_steps']
@@ -27,19 +26,15 @@ class Agent(object):
         self.mode = config['mode']
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
-
+        self.is_crashed = False
+        self.current_collected_reward = 0
         self.training_data = None
         self.control_environments = np.zeros((self.num_control_environments, ) + self.preprocessor.environment_processed_shape)
 
-# TODO:following 3 lines should be executed somewhere else
-        self.execute()
-        self.save_screenshots()
-        self.end()
-
-    def execute(self):
+    def run(self):
         if(self.mode == 'play'):
             self.play()
-        if(self.mode == 'train'):
+        elif(self.mode == 'train'):
             self.train()
 
     def process_action_to_state(self, action_code):
@@ -61,34 +56,38 @@ class Agent(object):
     def train(self):
         self.collect_control_environment_set(self.num_control_environments)
         start_time = time.time()
-
         for epoch in range(self.model.start_epoch, self.epochs_to_train):
-            first_state = self.game.process_to_first_state()
-            environment_prev = self.preprocessor.process(first_state.get_image())
-            crashed = False
-            reward_sum = 0
-            epsilon = self.get_epsilon(epoch)
-
-            while not crashed:
-                action = self.get_action(epsilon, environment_prev)
-                state = self.process_action_to_state(action)
-
-                reward = state.get_reward()
-                crashed = state.is_crashed()
-                image = state.get_image()
-                environment_next = self.preprocessor.process(image)
-
-                self.memory.add((environment_prev, action, reward, environment_next, crashed))
-                environment_prev = environment_next
-                reward_sum += reward
-
-            loss = self.replay(epoch)
-            avg_control_q = self.get_sum_of_q_values_over_control_envs()
-            self.logger.log_parameter(epoch=epoch, start_time=start_time, score=self.game.get_score(),
-                    loss=loss, epsilon=epsilon, epochs_to_train=self.epochs_to_train,
-                    reward=reward_sum, avg_control_q=avg_control_q, start_epoch=self.model.start_epoch)  # noqa: E128
-            self.logger.save_model(epoch, self.model.train_model)
+            self.train_epoch(epoch, start_time)
         self.logger.close()
+
+    def train_epoch(self, epoch, start_time):
+        first_state = self.game.process_to_first_state()
+        first_image = first_state.get_image()
+        self.environment = self.preprocessor.process(first_image)
+        epsilon = self.get_epsilon(epoch)
+        self.current_collected_reward = 0
+        while not self.is_crashed:
+            self.fill_memory(epsilon)
+        loss = self.replay(epoch)
+        avg_control_q = self.get_sum_of_q_values_over_control_envs()
+        reward = self.current_collected_reward
+        self.logger.log_parameter(epoch=epoch, start_time=start_time, score=self.game.get_score(),
+                loss=loss, epsilon=epsilon, epochs_to_train=self.epochs_to_train,
+                reward=reward, avg_control_q=avg_control_q, start_epoch=self.model.start_epoch)  # noqa: E128
+
+    def fill_memory(self, epsilon):
+        # process to next state and add (s-1, a, r, s) to memory
+        environment_prev = self.environment
+        action = self.get_action(epsilon, environment_prev)
+        state = self.process_action_to_state(action)
+        is_crashed = state.is_crashed()
+        image = state.get_image()
+        reward = state.get_reward()
+        environment_next = self.preprocessor.process(image)
+        self.memory.add((environment_prev, action, reward, environment_next, is_crashed))
+        self.current_collected_reward += reward
+        self.environment = environment_next
+        self.is_crashed = is_crashed
 
     def get_action(self, epsilon, environment_prev):
         if np.random.random() < epsilon:
@@ -96,6 +95,7 @@ class Agent(object):
         return self.model.get_action(environment_prev)
 
     def replay(self, epoch):
+        # train DQN
         if self.memory.cur_size < self.memory.get_batch_size():
             return
         if(epoch % self.copy_train_to_target_every_epoch is 0):
@@ -106,6 +106,7 @@ class Agent(object):
         return np.mean(losses)
 
     def collect_control_environment_set(self, num_control_environments):
+        # run once in beginning to collect samples for monitoring
         state = None
         for i in range(num_control_environments):
             state = self.get_random_state(state)
@@ -136,6 +137,6 @@ class Agent(object):
             return
         for image_idx, image in enumerate(self.preprocessor.screenshots_for_visual[::save_every_x]):
             image_name = 'env_{}.jpg'.format(image_idx)
-            imwrite(os.path.join(self.path_to_image_folder, image_name), image)
-
+            path_to_image = os.path.join(self.path_to_image_folder, image_name)
+            imwrite(path_to_image, image)
         print("Saved images to {}".format(self.path_to_image_folder))

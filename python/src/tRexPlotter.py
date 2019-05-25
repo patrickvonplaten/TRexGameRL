@@ -12,8 +12,8 @@ class Plotter(object):
         self.folder_to_save_plots = folder_to_save_plots
         self.title = title
         self.content = self.read_in_file()
-        self.parameter_dict = self.set_up_parameter_dict(self.parameters_to_plot)
         self.running_avg = 200
+        self.parameter_dict = self.set_up_parameter_dict(self.parameters_to_plot)
 
     def read_in_file(self):
         with open(self.train_log_file) as log_file:
@@ -29,7 +29,8 @@ class Plotter(object):
     def extract_parameter_values_from_content(self, parameter):
         parameter_values = []
         for line in self.content:
-            parameter_values.append(self.extract_parameter_value_from_line(parameter, line))
+            parameter_value = self.extract_parameter_value_from_line(parameter, line)
+            parameter_values.append(parameter_value)
         return [x for x in parameter_values if x is not None]
 
     def extract_parameter_value_from_line(self, parameter, line):
@@ -53,10 +54,8 @@ class Plotter(object):
     def plot(self, parameter_name, parameter_values):
         values_array = np.asarray(parameter_values)
         epochs_array = np.arange(values_array.size)
-
         running_avg_array, epochs_avg_array = self.calculate_running_avg_array(values_array, epochs_array)
         running_standard_dev_array = self.calculate_running_std_dev(values_array)
-
         fig, ax = plt.subplots()
         ax.plot(epochs_array, values_array, color='black')
         ax.plot(epochs_avg_array, running_avg_array, color='red')
@@ -64,7 +63,8 @@ class Plotter(object):
         ax.plot(epochs_avg_array, running_avg_array - running_standard_dev_array, color='orange')
         ax.set(xlabel='epochs', ylabel=parameter_name, title=self.title)
         ax.grid()
-        fig.savefig(os.path.join(self.folder_to_save_plots, parameter_name + '_plot_' + self.title + '.png'))
+        path_to_save_fig = os.path.join(self.folder_to_save_plots, parameter_name + '_plot_' + self.title + '.png')
+        fig.savefig(path_to_save_fig)
 
     def calculate_running_avg_array(self, values_array, epochs_array):
         running_avg_array = np.convolve(values_array, np.ones((self.running_avg,))/self.running_avg, mode='valid')
@@ -90,6 +90,5 @@ if __name__ == "__main__":
     train_log_file = args.log
     folder_to_save_plots = args.save
     title = args.title
-
     plotter = Plotter(train_log_file, parameters_to_plot, folder_to_save_plots, title)
     plotter.plot_parameters()

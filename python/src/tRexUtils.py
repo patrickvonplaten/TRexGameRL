@@ -1,6 +1,6 @@
 import numpy as np
-from tensorflow.python.keras.layers import Dense
-from tensorflow.python.keras.activations import relu
+from tensorflow.python.keras.layers import Dense  # noqa: F401
+from tensorflow.python.keras.activations import relu  # noqa: F401
 
 
 def linearly_decaying_epsilon(step, epsilon_init, decay_period, warmup_steps, epsilon_final):
@@ -29,7 +29,7 @@ def is_float(value):
         return True
     except ValueError:
         return False
-    
+
 
 def is_int(value):
     try:
@@ -42,20 +42,32 @@ def is_int(value):
 def convert_config_to_correct_type(variable):
     variable_type = type(variable)
     if(variable_type is not dict and variable_type is not list):
-        value = variable
-        if(is_int(value)):
-            return int(value)
-        elif(is_float(value)):
-            return float(value)
-        return value
+        return convert_to_value(variable)
     elif(variable_type is dict):
-        dictionary = variable
-        for key in dictionary.keys():
-            dictionary[key] = convert_config_to_correct_type(dictionary[key])
-        return dictionary
+        return convert_to_dict(variable)
     elif(variable_type is list):
-        value_list = variable
-        for idx, value in enumerate(value_list):
-            value_list[idx] = convert_config_to_correct_type(value)
-        return value_list
+        return convert_to_value_list(variable)
     return variable
+
+
+def convert_to_dict(variable):
+    dictionary = variable
+    for key in dictionary.keys():
+        dictionary[key] = convert_config_to_correct_type(dictionary[key])
+    return dictionary
+
+
+def convert_to_value_list(variable):
+    value_list = variable
+    for idx, value in enumerate(value_list):
+        value_list[idx] = convert_config_to_correct_type(value)
+    return value_list
+
+
+def convert_to_value(variable):
+    value = variable
+    if(is_int(value)):
+        return int(value)
+    elif(is_float(value)):
+        return float(value)
+    return value

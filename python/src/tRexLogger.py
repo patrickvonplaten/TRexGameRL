@@ -12,21 +12,21 @@ class Logger(object):
 
     def __init__(self, config):
         self.path_to_log = config['PATH_TO_LOG']
-        if not os.path.isdir(self.path_to_log):
-            os.mkdir(self.path_to_log)
         self.path_to_file = os.path.join(self.path_to_log, 'train_log.txt')
         self.path_to_models = config['PATH_TO_MODELS']
-        if not os.path.isdir(self.path_to_models):
-            os.mkdir(self.path_to_models)
         self.save_model_every_epoch = config['save_model_every_epoch']
         self.keep_models = config['keep_models']
+        self.running_avg = config['running_avg']
         self.file = None
         self.saved_epochs = []
-        self.running_avg = config['running_avg']
-        self.running_scores = collections.deque(maxlen=self.running_avg)
         self.epoch = 0
         self.network_name_template = 'network.epoch.{:07}.h5'
         self.weights_name_template = 'weights.epoch.{:07}.h5'
+        if not os.path.isdir(self.path_to_log):
+            os.mkdir(self.path_to_log)
+        if not os.path.isdir(self.path_to_models):
+            os.mkdir(self.path_to_models)
+        self.running_scores = collections.deque(maxlen=self.running_avg)
 
     def get_tensor_board(self):
         return TensorBoard(log_dir=self.path_to_log, histogram_freq=0, write_graph=True, write_images=True)
@@ -81,12 +81,14 @@ class Logger(object):
         return datetime.datetime.now().strftime('%H:%M:%S')
 
     def get_avg_score(self):
-        return round(sum(self.running_scores)/float(len(self.running_scores)))
+        avg_score = round(sum(self.running_scores)/float(len(self.running_scores)))
+        return avg_score
 
     def get_std_dev_score(self):
         if(len(self.running_scores) is 1):
             return 0
-        return round(statistics.stdev(self.running_scores), 2)
+        stdev = round(statistics.stdev(self.running_scores), 2)
+        return stdev
 
     def set_running_scores(self, score, epoch):
         assert self.epoch == epoch, 'set_running_scores should be called only once per epoch'

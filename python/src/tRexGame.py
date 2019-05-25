@@ -85,15 +85,14 @@ class TRexGame(Game):
         return self._get_state(action_code)
 
     def _get_state(self, action_code):
-        crashed = self.is_crashed()
-        if crashed:
+        is_crashed = self.is_crashed()
+        if is_crashed:
             reward = self.crash_reward
         else:
             action = self.actions[action_code]
             reward = action.reward
-
         image = self.chrome_driver.get_image_as(np.uint8)
-        return State(image, reward, crashed, self.timestamp)
+        return State(image, reward, is_crashed, self.timestamp)
 
 
 class Action(object):
