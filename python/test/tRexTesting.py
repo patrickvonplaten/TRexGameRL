@@ -10,7 +10,6 @@ from tRexMemory import Memory  # noqa: E402
 from tRexLogger import Logger  # noqa: E402
 import numpy as np  # noqa: E402
 import random  # noqa: E402
-import math  # noqa: E402
 import statistics  # noqa: E402
 
 
@@ -30,7 +29,6 @@ def test_tRex_memory():
         'priority_alpha': 0.6
     }
     memory = Memory(memory_config)
-
     assert memory.sum_tree.num_leaf_nodes is 20
     assert memory.sum_tree.num_sum_nodes is 19
 
@@ -57,14 +55,13 @@ def test_tRex_memory():
         np.testing.assert_almost_equal(memory.storage[18][2], reward[18], 5)
         np.testing.assert_almost_equal(memory.storage[10][3], environment_next[10], 5)
         for i in range(20):
-            np.testing.assert_almost_equal(memory.sum_tree.tree[memory.sum_tree.get_leaf_index_from_storage_index(i)], (2 + 0.01)**0.6, 5)
+            np.testing.assert_almost_equal(memory.sum_tree.tree[memory.sum_tree.get_leaf_index(i)], (2 + 0.01)**0.6, 5)
 
     def test_get_index():
         memory = Memory(memory_config)
-
-        assert memory.sum_tree.get_leaf_index_from_storage_index(10) is 29
-        assert memory.sum_tree.get_storage_index_from_leaf_index(24) is 5
-        assert memory.sum_tree.get_storage_index_from_leaf_index(memory.sum_tree.get_leaf_index_from_storage_index(10)) is 10
+        assert memory.sum_tree.get_leaf_index(10) is 29
+        assert memory.sum_tree.get_storage_index(24) is 5
+        assert memory.sum_tree.get_storage_index(memory.sum_tree.get_leaf_index(10)) is 10
 
     def test_get_priority_score_final():
         memory = Memory(memory_config)
@@ -86,21 +83,19 @@ def test_tRex_memory():
         memory.sum_tree.tree[0] = 100
         size = 10
         prob_interval = memory.build_prob_interval(size)
-
         assert len(prob_interval) is size
         for i in range(size-1):
             assert prob_interval[i] < prob_interval[i+1]
         assert prob_interval[size - 1] < memory.sum_tree.get_total_priority_sum()
 
-    def test_get_weight_for_sample():
+    def test_get_weight():
         memory = Memory(memory_config)
         priority_prob = random.random()
         epoch = 80
-
         np.testing.assert_almost_equal((32 * priority_prob)**(
-            -memory.get_priority_beta(epoch, 100, 0.4)), memory.get_weight_for_sample(priority_prob, epoch), 5)
+            -memory.get_priority_beta(epoch, 100, 0.4)), memory.get_weight(priority_prob, epoch), 5)
 
-    def test_get_leaf_index_from_value():
+    def test_get_leaf_index():
         memory = Memory(memory_config)
         value = 5
         memory.sum_tree.add(0, value)
@@ -108,10 +103,9 @@ def test_tRex_memory():
         memory.sum_tree.add(10, value)
         priority_score_final = memory.sum_tree.get_priority_score_final(value)
         margin = priority_score_final/float(2)
-
-        assert memory.sum_tree.get_storage_index_from_value(margin) is 0
-        assert memory.sum_tree.get_storage_index_from_value(priority_score_final + margin) is 6
-        assert memory.sum_tree.get_storage_index_from_value(2*priority_score_final + margin) is 10
+        assert memory.sum_tree.sample_storage_index(margin) is 0
+        assert memory.sum_tree.sample_storage_index(priority_score_final + margin) is 6
+        assert memory.sum_tree.sample_storage_index(2*priority_score_final + margin) is 10
 
     def test_update():
         memory = Memory(memory_config)
@@ -120,14 +114,13 @@ def test_tRex_memory():
         for i in range(20):
             memory.sum_tree.add(indexes[i], values[i])
         total_priority_sum_prev = memory.sum_tree.get_total_priority_sum()
-        priority_value_at_storage_5 = memory.sum_tree.tree[memory.sum_tree.get_leaf_index_from_storage_index(5)]
+        priority_value_at_storage_5 = memory.sum_tree.tree[memory.sum_tree.get_leaf_index(5)]
         loss = random.random()
         priority_score_final = memory.sum_tree.get_priority_score_final(loss)
         memory.sum_tree.update(5, loss)
         total_priority_sum_next = memory.sum_tree.get_total_priority_sum()
         priority_prob = priority_score_final/float(total_priority_sum_next)
-
-        np.testing.assert_almost_equal(memory.sum_tree.get_priority_prob_from_storage_index(5), priority_prob, 5)
+        np.testing.assert_almost_equal(memory.sum_tree.get_priority_prob(5), priority_prob, 5)
         np.testing.assert_almost_equal(total_priority_sum_next - total_priority_sum_prev, priority_score_final - priority_value_at_storage_5)
 
     test_add()
@@ -135,8 +128,8 @@ def test_tRex_memory():
     test_get_priority_score_final()
     test_sum_tree_total_priority_sum()
     test_build_prob_intervall()
-    test_get_weight_for_sample()
-    test_get_leaf_index_from_value()
+    test_get_weight()
+    test_get_leaf_index()
     test_update()
 
 
@@ -160,23 +153,18 @@ def test_tRex_logger():
             logger.set_running_scores(score, idx)
             size_of_running_scores = min(logger.running_avg, idx+1)
             assert len(logger.running_scores) is size_of_running_scores
-
             running_sum += score
-
             if(idx > logger.running_avg-1):
                 running_sum -= scores[idx - logger.running_avg]
-            avg = round(running_sum/size_of_running_scores)
-
+            avg = round(running_sum/float(size_of_running_scores))
             if(idx is 0):
                 std_dev = 0
             else:
                 idx_first_elem = max(0, idx-logger.running_avg+1)
                 std_dev = round(statistics.stdev(scores[idx_first_elem:size_of_running_scores+idx_first_elem]), 2)
-
             assert logger.running_scores[0] is score
             assert logger.get_avg_score() == avg
-            assert math.isclose(logger.get_std_dev_score(), std_dev, abs_tol=1e-2)
-
+            np.testing.assert_almost_equal(logger.get_std_dev_score(), std_dev)
     test_set_running_scores()
 
 
