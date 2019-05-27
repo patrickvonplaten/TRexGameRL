@@ -18,4 +18,4 @@ Iteratively, the model was improved by implementing the [duel networks architect
 An average score of ~800 (see python/plots/score_plot_trial19_mem_50k_lr_0.0001_decay_5000.png) is achieved by using a large 
 memory of 50.000 and Adam optimization. 
 
-Using a smaller memory of only 12.000 a score of could be achieved.
+Using a smaller memory of only 12.000 with Adam only a score of ~400 could be achieved (see python/plots/score_plot_trial3_adam_12k_2nd.png).
