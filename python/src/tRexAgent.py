@@ -96,6 +96,7 @@ class Agent(object):
 
     def replay(self, epoch):
         # train DQN
+        print('memory size: ' + str(self.memory.cur_size))
         if self.memory.cur_size < self.memory.get_batch_size():
             return
         if(epoch % self.copy_train_to_target_every_epoch is 0):

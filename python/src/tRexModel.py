@@ -43,8 +43,8 @@ class TFRexModel(object):
         num_input_images = config['buffer_size']
         lstm_dropout = config['lstm_dropout']
         input_shape = Input(shape=(resize_dim, resize_dim, num_input_images))
-        base_network = getattr(tRexNetwork, 'base_network')(input_shape, conv_initialization, lstm_dropout)
-        end_network = getattr(tRexNetwork, network_type)(base_network, dense_initialization, num_actions)
+        base_network = getattr(tRexNetwork, 'base_network')(input_shape, conv_initialization)
+        end_network = getattr(tRexNetwork, network_type)(base_network, dense_initialization, num_actions, lstm_dropout)
         network = Model(inputs=input_shape, outputs=end_network)
         path_to_weights_to_load = config['path_to_weights_to_load'] if 'path_to_weights_to_load' in config else None
         if(path_to_weights_to_load is not None):
@@ -60,6 +60,7 @@ class TFRexModel(object):
     def get_action(self, environment):
         expanded_environment = np.expand_dims(environment, axis=0)
         result = self.train_model.predict(expanded_environment, batch_size=1)
+        print('Result: ' + str(np.argmax(result, axis=1)[0]))
         return np.argmax(result, axis=1)[0]
 
     def get_num_actions(self):
