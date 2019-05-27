@@ -12,7 +12,7 @@ has access to the same and only the same information a human play would have for
 
 The DQN model architecture is taken from [Playing Atari with Deep Reinforcement Learning](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf).
 
-Iteratively, the model was improved by implementing the [duel networks architecture](http://proceedings.mlr.press/v48/wangf16.pdf), [prioritized experience replay](https://arxiv.org/pdf/1511.05952.pdf) and [double q-learning](https://arxiv.org/pdf/1509.06461.pdf)
+Iteratively, the model was improved by implementing the [duel networks architecture](http://proceedings.mlr.press/v48/wangf16.pdf), [prioritized experience replay](https://arxiv.org/pdf/1511.05952.pdf) and [double q-learning](https://arxiv.org/pdf/1509.06461.pdf).
 
 
 An average score of ~800 (see python/plots/score_plot_trial19_mem_50k_lr_0.0001_decay_5000.png) is achieved by using a large 
