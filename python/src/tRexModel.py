@@ -39,7 +39,9 @@ class TFRexModel(object):
         dense_initialization = config['dense_init']
         network_type = config['network_type']
         num_actions = config['num_actions']
-        input_shape = Input(shape=(80, 80, 4))
+        buffer_size = config['buffer_size']
+        resize_dim = config['resize_dim']
+        input_shape = Input(shape=(resize_dim, resize_dim, buffer_size))
         base_network = getattr(tRexNetwork, 'base_network')(input_shape, conv_initialization)
         end_network = getattr(tRexNetwork, network_type)(base_network, dense_initialization, num_actions)
         network = Model(inputs=input_shape, outputs=end_network)
