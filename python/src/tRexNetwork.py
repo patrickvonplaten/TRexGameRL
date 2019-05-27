@@ -1,14 +1,22 @@
 from tensorflow.python.keras.activations import relu  # noqa: E402
-from tensorflow.python.keras.layers import Conv2D, Flatten, Dense, Add, Subtract, Lambda  # noqa: E402
+from tensorflow.python.keras.layers import LSTM, Conv2D, Flatten, Dense, Add, Subtract, Lambda  # noqa: E402
+from tensorflow.python.keras.backend import expand_dims
 import tRexUtils
 
 
-def base_network(input_shape, conv_initialization):
+def base_network(input_shape, conv_initialization, lstm_dropout, lstm_initialization='glorot_normal'):
     conv1 = Conv2D(filters=32, kernel_size=(8, 8), strides=(4, 4), padding='valid', activation=relu, kernel_initializer=conv_initialization)(input_shape)
     conv2 = Conv2D(filters=64, kernel_size=(4, 4), strides=(2, 2), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv1)
     conv3 = Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), padding='valid', activation=relu, kernel_initializer=conv_initialization)(conv2)
     flatten = Flatten()(conv3)
-    return flatten
+
+    def add_lstm(flatten):
+        flatten_expand = expand_dims(flatten, -1)
+        lstm_out = LSTM(units=150, kernel_initializer=lstm_initialization, dropout=lstm_dropout)(flatten_expand)
+        return lstm_out
+
+    lstm_out = Lambda(add_lstm)(flatten)
+    return lstm_out
 
 
 def standard_dqn(flatten, dense_initialization, num_actions):

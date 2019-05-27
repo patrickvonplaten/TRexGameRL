@@ -39,8 +39,11 @@ class TFRexModel(object):
         dense_initialization = config['dense_init']
         network_type = config['network_type']
         num_actions = config['num_actions']
-        input_shape = Input(shape=(80, 80, 4))
-        base_network = getattr(tRexNetwork, 'base_network')(input_shape, conv_initialization)
+        resize_dim = config['resize_dim']
+        num_input_images = config['buffer_size']
+        lstm_dropout = config['lstm_dropout']
+        input_shape = Input(shape=(resize_dim, resize_dim, num_input_images))
+        base_network = getattr(tRexNetwork, 'base_network')(input_shape, conv_initialization, lstm_dropout)
         end_network = getattr(tRexNetwork, network_type)(base_network, dense_initialization, num_actions)
         network = Model(inputs=input_shape, outputs=end_network)
         path_to_weights_to_load = config['path_to_weights_to_load'] if 'path_to_weights_to_load' in config else None

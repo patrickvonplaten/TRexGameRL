@@ -26,7 +26,6 @@ class Agent(object):
         self.mode = config['mode']
         self.num_control_environments = config['num_control_environments']
         self.copy_train_to_target_every_epoch = config['copy_train_to_target_every_epoch']
-        self.is_crashed = False
         self.current_collected_reward = 0
         self.training_data = None
         self.control_environments = np.zeros((self.num_control_environments, ) + self.preprocessor.environment_processed_shape)
@@ -66,8 +65,9 @@ class Agent(object):
         self.environment = self.preprocessor.process(first_image)
         epsilon = self.get_epsilon(epoch)
         self.current_collected_reward = 0
-        while not self.is_crashed:
-            self.fill_memory(epsilon)
+        is_crashed = False
+        while not is_crashed:
+            is_crashed = self.fill_memory(epsilon)
         loss = self.replay(epoch)
         avg_control_q = self.get_sum_of_q_values_over_control_envs()
         reward = self.current_collected_reward
@@ -87,7 +87,7 @@ class Agent(object):
         self.memory.add((environment_prev, action, reward, environment_next, is_crashed))
         self.current_collected_reward += reward
         self.environment = environment_next
-        self.is_crashed = is_crashed
+        return is_crashed
 
     def get_action(self, epsilon, environment_prev):
         if np.random.random() < epsilon:

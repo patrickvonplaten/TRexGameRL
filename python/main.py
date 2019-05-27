@@ -53,7 +53,8 @@ if __name__ == "__main__":
     preprocessor = Prepocessor(config=preprocessor_config)
     logger = Logger(config=log_config)
     restore_epoch = model_config['restore_epoch'] if 'restore_epoch' in model_config else None
-    model = TFRexModel.restore_from_epoch(epoch=restore_epoch, config=model_config, logger=logger) if restore_epoch is not None else TFRexModel.create_network(config=model_config, logger=logger)
+    model = TFRexModel.restore_from_epoch(epoch=restore_epoch, config=model_config,
+            logger=logger) if restore_epoch is not None else TFRexModel.create_network(config=model_config, logger=logger)  # noqa: E128
     agent = Agent(model=model, memory=memory, preprocessor=preprocessor,
             game=game, logger=logger, config=agent_config)  # noqa: E128
     agent.run()
